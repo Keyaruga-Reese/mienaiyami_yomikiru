@@ -133,7 +133,7 @@
         "*.{js,jsx,ts,tsx}": [
             "biome check --write --files-ignore-unknown=true --no-errors-on-unmatched"
         ],
-        "*.{json,css,md}": [
+        "*.{json,css}": [
             "biome format --write"
         ]
     },
