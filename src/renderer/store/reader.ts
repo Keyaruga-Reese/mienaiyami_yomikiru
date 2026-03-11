@@ -1,6 +1,7 @@
 import type { LibraryItemWithProgress } from "@common/types/db";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from ".";
+import { updateChaptersRead, updateChaptersReadAll } from "./library";
 
 // ! ReaderState.content.progress is not linked to libraryItem.progress
 // ! both are independent to prevent issues with multiple windows
@@ -145,6 +146,27 @@ const readerSlice = createSlice({
                 state.content.progress.chapterName = chapterName || state.content.progress.chapterName;
             }
         },
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(updateChaptersRead.fulfilled, (state, action) => {
+                if (
+                    state.type === "manga" &&
+                    state.content?.progress &&
+                    state.content.link === action.payload.itemLink
+                ) {
+                    state.content.progress.chaptersRead = action.payload.chapterRead;
+                }
+            })
+            .addCase(updateChaptersReadAll.fulfilled, (state, action) => {
+                if (
+                    state.type === "manga" &&
+                    state.content?.progress &&
+                    state.content.link === action.payload.itemLink
+                ) {
+                    state.content.progress.chaptersRead = action.payload.chaptersRead;
+                }
+            });
     },
 });
 
