@@ -14,12 +14,11 @@
 >
 > I'm actively working on a permanent solution to this issue. For more information, see <https://github.com/mienaiyami/yomikiru/discussions/451>
 
-# 2.23.0
+# 2.23.2-beta
 
-- fix: #260, disable drag to scroll for right and bottom edge in reader.
-- fix: #458, improve error handling during window destruction process.
-- feat(dev): setup arch linux build workflow and better release artifacts generation and files for release.
+- feat: add arch linux support for auto-updates.
+- fix: chapter list not refreshing after mark read/unread (#486) (#500) by @jaathavan18
 
-## 2.22.5
+## 2.23.1
 
-<https://github.com/mienaiyami/yomikiru/releases/tag/v2.22.5>
+<https://github.com/mienaiyami/yomikiru/releases/tag/v2.23.1>
