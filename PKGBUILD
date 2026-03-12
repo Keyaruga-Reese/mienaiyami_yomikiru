@@ -6,16 +6,11 @@ arch=("x86_64")
 url="https://github.com/mienaiyami/yomikiru"
 license=("MIT")
 
-depends=(
-  gtk3
-  nss
-  libxss
-  alsa-lib
-)
+depends=()
 
 options=(!strip !debug)
 
-source=("Yomikiru-linux-x64-${pkgver}.zip")
+source=("${pkgname}-linux-x64-${pkgver}.zip")
 sha256sums=("SKIP")
 
 package() {
@@ -25,7 +20,7 @@ package() {
   install -dm755 "$pkgdir/usr/share/applications"
 
   # extract electron bundle
-  bsdtar -xf "$srcdir/Yomikiru-linux-x64-${pkgver}.zip" \
+  bsdtar -xf "$srcdir/${pkgname}-linux-x64-${pkgver}.zip" \
   --strip-components=1 \
   -C "$pkgdir/usr/lib/$pkgname"
 

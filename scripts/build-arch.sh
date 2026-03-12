@@ -4,6 +4,7 @@ set -e
 APP_NAME=yomikiru
 PRODUCT_NAME=Yomikiru
 VERSION=$(node -p "require('./package.json').version")
+PKGVER=$(echo "$VERSION" | sed 's/-/_/g')
 
 ZIP_FILE="out/make/zip/linux/x64/${PRODUCT_NAME}-linux-x64-${VERSION}.zip"
 
@@ -18,13 +19,13 @@ rm -rf "$BUILD_DIR"
 mkdir "$BUILD_DIR"
 
 cp PKGBUILD "$BUILD_DIR/"
-cp "$ZIP_FILE" "$BUILD_DIR/"
+cp "$ZIP_FILE" "$BUILD_DIR/${APP_NAME}-linux-x64-${PKGVER}.zip"
 
 cd "$BUILD_DIR"
 
 echo "Updating PKGBUILD version..."
 
-sed -i "s/VERSION_REPLACE/${VERSION}/g" PKGBUILD
+sed -i "s/VERSION_REPLACE/${PKGVER}/g" PKGBUILD
 
 echo "Building Arch package with Docker..."
 
@@ -32,7 +33,7 @@ if ! docker run --rm \
     -v "${PWD}:/build" \
     archlinux:latest \
     bash -c "
-      pacman -Sy --noconfirm base-devel bsdtar &&
+      pacman -Sy --noconfirm base-devel libarchive &&
       useradd -m builder &&
       chown -R builder:builder /build &&
       su builder -c 'cd /build && makepkg -f --noconfirm'
