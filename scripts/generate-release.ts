@@ -69,7 +69,7 @@ const createArtifactMap = (appNameParam: string, appVersionParam: string) => ({
         icon: "debian&logoColor=red",
     },
     "linux+pkg.tar.xz+x64": {
-        name: `${appNameParam}-v${appVersionParam}-x86_64.pkg.tar.xz`,
+        name: `${appNameParam.toLowerCase()}-v${appVersionParam.replace(/-/g, "_")}-x86_64.pkg.tar.xz`,
         text: "64-bit Linux (Arch)",
         icon: "archlinux&logoColor=blue",
     },
