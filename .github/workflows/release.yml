@@ -122,7 +122,7 @@ jobs:
         run: pnpm install
 
       - name: forge make
-        run: electron-forge make --targets=@electron-forge/maker-deb,@electron-forge/maker-zip
+        run: pnpm make:deb
 
       - name: Set version
         id: version

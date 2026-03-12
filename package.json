@@ -1,7 +1,7 @@
 {
     "name": "yomikiru",
     "productName": "Yomikiru",
-    "version": "2.23.2-beta",
+    "version": "2.23.2-beta.2",
     "description": "An offline desktop reader for manga, comics, and novels. Offers a customizable reading experience with extensive settings, shortcuts, themes and layouts.",
     "main": ".webpack/main",
     "author": {
@@ -34,7 +34,7 @@
         "make:zip64": "electron-forge make --targets=@electron-forge/maker-zip --arch=x64",
         "make:win32": "electron-forge make --targets=@electron-forge/maker-squirrel,@electron-forge/maker-zip --arch=ia32",
         "make:win64": "electron-forge make --targets=@electron-forge/maker-squirrel,@electron-forge/maker-zip --arch=x64",
-        "make:deb": "electron-forge make --targets=@electron-forge/maker-deb",
+        "make:deb": "electron-forge make --targets=@electron-forge/maker-deb,@electron-forge/maker-zip",
         "generate:release": "tsx scripts/generate-release.ts",
         "release": "tsx scripts/tag-and-push.ts",
         "prepare": "husky"
