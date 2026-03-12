@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { MakerDeb } from "@electron-forge/maker-deb";
@@ -57,7 +56,7 @@ const config: ForgeConfig = {
     ],
     makers: [
         new MakerSquirrel({}, ["win32"]),
-        new MakerZIP({}, ["win32", "darwin"]),
+        new MakerZIP({}, ["win32", "darwin", "linux"]),
         new MakerDeb(
             {
                 options: {
@@ -103,67 +102,6 @@ const config: ForgeConfig = {
                 arch: result.arch,
                 artifacts: result.artifacts.map(normalizePath),
             }));
-
-            let pacmanArtifactPath: string | null = null;
-            if (platform === "linux") {
-                const appName = makeResults[0].packageJSON.productName;
-                const appVersion = makeResults[0].packageJSON.version;
-                const expectedPkgName = `${appName}-v${appVersion}-x86_64.pkg.tar.xz`;
-                const pkgFile = path.join(MAIN_OUT_DIR, expectedPkgName);
-
-                const debArtifact = makeResults[0].artifacts.find((a: string) => a.endsWith(".deb"));
-                if (debArtifact && fs.existsSync(debArtifact) && !fs.existsSync(pkgFile)) {
-                    try {
-                        const tempDir = path.join(MAIN_OUT_DIR, `temp-pacman-${Date.now()}`);
-                        fs.mkdirSync(tempDir, { recursive: true });
-
-                        execSync(`dpkg-deb -x "${debArtifact}" "${tempDir}/extracted"`, { stdio: "inherit" });
-                        execSync(`dpkg-deb -e "${debArtifact}" "${tempDir}/control"`, { stdio: "inherit" });
-
-                        const pkgDir = path.join(tempDir, "pkg");
-                        const extractedDir = path.join(tempDir, "extracted");
-                        if (fs.existsSync(extractedDir)) {
-                            fs.mkdirSync(pkgDir, { recursive: true });
-                            const usrDir = path.join(pkgDir, "usr");
-                            fs.cpSync(extractedDir, usrDir, { recursive: true });
-                        }
-
-                        const pkgInfoPath = path.join(pkgDir, ".PKGINFO");
-                        const stats = fs.statSync(debArtifact);
-                        const pkgInfo = `pkgname = ${appName.toLowerCase()}
-pkgver = ${appVersion}
-pkgdesc = ${packageJSON.description}
-url = ${packageJSON.author.url}
-packager = ${packageJSON.author.name}
-arch = x86_64
-size = ${stats.size}
-license = ${packageJSON.license}
-`;
-                        fs.writeFileSync(pkgInfoPath, pkgInfo);
-
-                        const mtreePath = path.join(pkgDir, ".MTREE");
-                        fs.writeFileSync(mtreePath, "#mtree\n");
-
-                        execSync(
-                            `cd "${pkgDir}" && tar -cJf "${pkgFile}" .PKGINFO .MTREE usr 2>/dev/null || (tar -cf - .PKGINFO .MTREE usr | xz > "${pkgFile}")`,
-                            { stdio: "inherit" },
-                        );
-
-                        console.log(`Created pacman package: ${pkgFile}`);
-                        pacmanArtifactPath = normalizePath(pkgFile);
-
-                        fs.rmSync(tempDir, { recursive: true, force: true });
-                    } catch (error) {
-                        console.warn(`Failed to create pacman package: ${error}`);
-                    }
-                } else if (fs.existsSync(pkgFile)) {
-                    pacmanArtifactPath = normalizePath(pkgFile);
-                }
-            }
-
-            if (pacmanArtifactPath) {
-                artifactsToSave[0].artifacts.push(pacmanArtifactPath);
-            }
 
             fs.writeFileSync(filePath, JSON.stringify(artifactsToSave, null, 2), "utf-8");
             console.log(`Saved build artifacts to: ${filePath}`);

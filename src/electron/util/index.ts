@@ -65,3 +65,5 @@ export const dateFromOldDateString = (localeDate?: string): Date => {
 };
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const isArchLinux = () => fs.existsSync("/etc/arch-release");

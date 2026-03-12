@@ -9,7 +9,7 @@ import * as electronDl from "electron-dl";
 import fetch from "electron-fetch";
 import logger from "electron-log";
 import * as semver from "semver";
-import { IS_PORTABLE, sleep } from "./util";
+import { IS_PORTABLE, isArchLinux, sleep } from "./util";
 
 declare const DOWNLOAD_PROGRESS_WEBPACK_ENTRY: string;
 
@@ -449,9 +449,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
             });
         }
     else if (process.platform === "linux") {
-        const dl = `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-amd64.deb`;
-        downloadFile(dl, webContents, (file) => {
-            logger.log(`${file.filename} downloaded.`);
+        const installDeb = (filePath: string) => {
             dialog
                 .showMessageBox(window, {
                     type: "info",
@@ -462,37 +460,77 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                 })
                 .then((res) => {
                     if (res.response === 0) {
-                        execSudo(
-                            `dpkg -i "${file.path}"`,
-                            {
-                                name: "Yomikiru",
-                            },
-                            (err) => {
-                                if (err) throw err;
-                                logger.log("Installing updates...");
-                            },
-                        );
+                        execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
+                            if (err) throw err;
+                            logger.log("Installing updates...");
+                        });
                     } else {
                         app.on("before-quit", () => {
-                            execSudo(
-                                `dpkg -i "${file.path}"`,
-                                {
-                                    name: "Yomikiru",
-                                },
-                                (err) => {
-                                    dialog.showMessageBox({
-                                        message: "Installing updates.",
-                                        type: "info",
-                                        title: "Yomikiru",
-                                    });
-                                    if (err) throw err;
-                                    logger.log("Installing updates...");
-                                },
-                            );
+                            execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
+                                dialog.showMessageBox({
+                                    message: "Installing updates.",
+                                    type: "info",
+                                    title: "Yomikiru",
+                                });
+                                if (err) throw err;
+                                logger.log("Installing updates...");
+                            });
                         });
                     }
                 });
-        });
+        };
+
+        const installArch = (filePath: string) => {
+            const dir = path.dirname(filePath);
+            dialog
+                .showMessageBox(window, {
+                    type: "info",
+                    title: "Updates downloaded",
+                    message: "Updates downloaded.",
+                    detail: "Install Now uses sudo. Use Install Manually if you prefer to run pacman yourself.",
+                    buttons: ["Install Now", "Install on Quit", "Install Manually (show folder)"],
+                    cancelId: 2,
+                })
+                .then((res) => {
+                    const doInstall = () => {
+                        execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
+                            if (err) throw err;
+                            logger.log("Installing updates...");
+                        });
+                    };
+                    if (res.response === 0) {
+                        doInstall();
+                    } else if (res.response === 1) {
+                        app.on("before-quit", () => {
+                            execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
+                                dialog.showMessageBox({
+                                    message: "Installing updates.",
+                                    type: "info",
+                                    title: "Yomikiru",
+                                });
+                                if (err) throw err;
+                                logger.log("Installing updates...");
+                            });
+                        });
+                    } else {
+                        shell.openPath(dir);
+                    }
+                });
+        };
+
+        if (isArchLinux()) {
+            const dl = `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-x86_64.pkg.tar.xz`;
+            downloadFile(dl, webContents, (file) => {
+                logger.log(`${file.filename} downloaded.`);
+                installArch(file.path);
+            });
+        } else {
+            const dl = `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-amd64.deb`;
+            downloadFile(dl, webContents, (file) => {
+                logger.log(`${file.filename} downloaded.`);
+                installDeb(file.path);
+            });
+        }
     }
 };
 
