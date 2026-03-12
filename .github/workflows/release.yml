@@ -121,13 +121,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Install dpkg-deb for pacman package creation
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y dpkg-dev
-
-      - name: forge make deb
-        run: pnpm make:deb
+      - name: forge make
+        run: electron-forge make --targets=@electron-forge/maker-deb,@electron-forge/maker-zip
 
       - name: Set version
         id: version
@@ -135,6 +130,9 @@ jobs:
           VERSION="${{ needs.check-ci-status.outputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
+
+      - name: Build Arch Linux package
+        run: bash scripts/build-arch.sh
 
       - uses: actions/upload-artifact@v4
         with:
@@ -229,5 +227,5 @@ jobs:
             ./checksums.txt
           body_path: changelog-temp.md
           generate_release_notes: true
-          discussion_category_name: General
-          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'test') }}
+          discussion_category_name: Releases
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}

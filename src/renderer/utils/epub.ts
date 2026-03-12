@@ -83,7 +83,7 @@ export default class EPUB {
     private static async parseEpubDir(dirPath: string): Promise<EPubData> {
         try {
             const exists = (p: string) => window.fs.existsSync(p);
-            if (!window.fs.existsSync) throw new Error("parseEpubDir: Path does not exist.");
+            if (!exists(dirPath)) throw new Error("parseEpubDir: Path does not exist.");
             const parser = new DOMParser();
             const containerPath = window.path.join(dirPath, "META-INF/container.xml");
             if (!exists(containerPath)) throw new Error("parseEpubDir: container.xml not found.");
