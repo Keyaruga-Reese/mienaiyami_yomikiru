@@ -36,7 +36,8 @@ if ! docker run --rm \
       pacman -Sy --noconfirm base-devel libarchive &&
       useradd -m builder &&
       chown -R builder:builder /build &&
-      su builder -c 'cd /build && makepkg -f --noconfirm'
+      su builder -c 'cd /build && makepkg -f --noconfirm' &&
+      chmod 644 /build/${APP_NAME}-*-x86_64.pkg.tar.*
     "; then
   echo "Error: Docker build failed"
   exit 1
@@ -44,6 +45,8 @@ fi
 
 mkdir -p ../out/all
 MAIN_PKG=$(find . -maxdepth 1 -name "${APP_NAME}-*-x86_64.pkg.tar.*" | head -n1)
-mv "$MAIN_PKG" ../out/all/
+# Strip pkgrel (-1) from filename: yomikiru-2.23.2_beta.3-1-x86_64 -> yomikiru-2.23.2_beta.3-x86_64
+NEWNAME=$(basename "$MAIN_PKG" | sed 's/-[0-9]\+-x86_64/-x86_64/')
+mv "$MAIN_PKG" "../out/all/${NEWNAME}"
 
-echo "Build complete: out/all/$(basename "$MAIN_PKG")"
+echo "Build complete: out/all/${NEWNAME}"
