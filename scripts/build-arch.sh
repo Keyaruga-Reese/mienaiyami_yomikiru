@@ -29,15 +29,20 @@ sed -i "s/VERSION_REPLACE/${PKGVER}/g" PKGBUILD
 
 echo "Building Arch package with Docker..."
 
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+
 if ! docker run --rm \
     -v "${PWD}:/build" \
+    -e HOST_UID="$HOST_UID" \
+    -e HOST_GID="$HOST_GID" \
     archlinux:latest \
     bash -c "
       pacman -Sy --noconfirm base-devel libarchive &&
       useradd -m builder &&
       chown -R builder:builder /build &&
       su builder -c 'cd /build && makepkg -f --noconfirm' &&
-      chmod 644 /build/${APP_NAME}-*-x86_64.pkg.tar.*
+      chown -R \$HOST_UID:\$HOST_GID /build
     "; then
   echo "Error: Docker build failed"
   exit 1
