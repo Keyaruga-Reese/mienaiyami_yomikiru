@@ -10,6 +10,7 @@ const mainSettingsSchema = z
     .object({
         hardwareAcceleration: z.boolean().default(true),
         tempPath: z.string().default(app.getPath("temp")),
+        /** Open files in current window and focus it when launching the app again. Disabled: open in new window. */
         openInExistingWindow: z.boolean().default(false),
         askBeforeClosing: z.boolean().default(false),
 

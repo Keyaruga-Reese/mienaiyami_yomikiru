@@ -119,6 +119,20 @@ const GeneralSettings: React.FC = () => {
                 </div>
                 <div className="toggleItem">
                     <InputCheckbox
+                        checked={mainSettings.openInExistingWindow}
+                        className="noBG"
+                        onChange={async (e) => {
+                            dispatch(updateMainSettings({ openInExistingWindow: e.currentTarget.checked }));
+                        }}
+                        labelAfter="Use Existing Window"
+                    />
+                    <div className="desc">
+                        Open files in current window and focus it when launching the app again. Disabled: open in
+                        new window. <code>App Restart Needed</code>
+                    </div>
+                </div>
+                <div className="toggleItem">
+                    <InputCheckbox
                         checked={appSettings.openOnDblClick}
                         className="noBG"
                         onChange={(e) => {

@@ -42,29 +42,29 @@ if (app.isPackaged && process.argv[1] && fs.existsSync(process.argv[1])) {
 }
 
 if (app.isPackaged) {
-    /**
-     * code to make sure only one instance of app is running at one time.
-     *  */
     const gotTheLock = app.requestSingleInstanceLock();
     if (!gotTheLock) {
         app.quit();
     }
-    // todo: improve
     app.on("second-instance", (_event, commandLine) => {
-        if (commandLine.length >= 3) {
-            // for file explorer option
-            if (MainSettings.settings.openInExistingWindow) {
-                const window = BrowserWindow.getAllWindows().at(-1);
-                if (window) {
-                    window.webContents.send("reader:loadLink", { link: commandLine[2] });
-                    window.show();
-                } else {
-                    log.error("Could not get the window.");
-                }
-            } else if (fs.existsSync(commandLine[2])) WindowManager.createWindow(commandLine[2]);
-        } else if (commandLine.length <= 2 || commandLine.includes("--new-window")) {
-            log.log("second instance detected, opening new window...");
-            WindowManager.createWindow();
+        const filePath = commandLine.length >= 3 && fs.existsSync(commandLine[2]) ? commandLine[2] : undefined;
+
+        if (commandLine.includes("--new-window")) {
+            WindowManager.createWindow(filePath);
+            return;
+        }
+
+        if (MainSettings.settings.openInExistingWindow) {
+            const existingWindow = BrowserWindow.getAllWindows().at(-1);
+            if (existingWindow) {
+                existingWindow.show();
+                existingWindow.focus();
+                if (filePath) existingWindow.webContents.send("reader:loadLink", { link: filePath });
+            } else if (filePath) {
+                WindowManager.createWindow(filePath);
+            }
+        } else {
+            WindowManager.createWindow(filePath);
         }
     });
 }

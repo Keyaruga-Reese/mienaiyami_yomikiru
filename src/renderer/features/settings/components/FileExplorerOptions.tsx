@@ -1,21 +1,8 @@
-import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { updateMainSettings } from "@store/mainSettings";
-import InputCheckbox from "@ui/InputCheckbox";
 import type { ReactElement } from "react";
 import { useExplorerOptions } from "../hooks/useExplorerOptions";
 
 const FileExplorerOptions = (): ReactElement => {
-    const dispatch = useAppDispatch();
-    const { openInExistingWindow } = useAppSelector((state) => state.mainSettings);
     const { isUpdating, handleInvoke } = useExplorerOptions();
-
-    const handleOpenInSameWindowChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch(
-            updateMainSettings({
-                openInExistingWindow: e.currentTarget.checked,
-            }),
-        );
-    };
 
     const handleAddOption = () => {
         handleInvoke("explorer:addOption", "Explorer option added successfully for manga/image files");
@@ -38,15 +25,7 @@ const FileExplorerOptions = (): ReactElement => {
             <h3>File Explorer Option</h3>
             <div className="desc">
                 Add file explorer option (right click menu) to open item in Yomikiru&apos;s reader directly from
-                File Explorer.
-            </div>
-            <div className="main">
-                <InputCheckbox
-                    checked={openInExistingWindow}
-                    className="noBG"
-                    onChange={handleOpenInSameWindowChange}
-                    labelAfter="Open In Existing Window"
-                />
+                File Explorer. Use &quot;Use Existing Window&quot; in Other Settings to open in current window.
             </div>
             <ul>
                 <li>
