@@ -11,49 +11,17 @@ import {
     updateReaderMangaCurrentPage,
 } from "@store/reader";
 import AniList from "@utils/anilist";
+import { processChapterNumber } from "@utils/chapterUtils";
 import { formatUtils } from "@utils/file";
 import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { InView } from "react-intersection-observer";
 import { useAppContext } from "../../../App";
-import AnilistEdit from "../../anilist/AnilistEdit";
-import AnilistSearch from "../../anilist/AnilistSearch";
 import useSmoothScroll from "../hooks/useSmoothScroll";
 import ReaderSettings from "./components/ReaderSettings";
 import ReaderSideList from "./components/ReaderSideList";
 
 const SCROLLBAR_THRESHOLD = 20;
-
-const processChapterNumber = (chapterName: string): number | undefined => {
-    /*
-    possible chapter name formats
-    chapter 1123.33as
-    chapter 123 asd
-    ch. 1
-    ch1
-    c 1
-    c1
-    part 1
-    pt. 1
-    pt1
-    episode 1
-    ep 1
-    ep1
-    uploader_ch.1
-    uploader-ch.1
-
-    support float chapter number
-    /(^| |\.|_|-)((chapter|(c(h)?)|(p(t)?(art)?)|(ep(isode)?))((\s)?(-|_|\.)?(\s)?)?(?<main>\d+(\.\d+)?))/gi;
-     */
-    const regex = /(^| |\.|_|-)((chapter|(c(h)?)|(p(t)?(art)?)|(ep(isode)?))((\s)?(-|_|\.)?(\s)?)?(?<main>\d+))/gi;
-    const results = [...chapterName.matchAll(regex)];
-    if (results.length === 0) return;
-    const result = results[0].groups?.main;
-    if (!result) return;
-    const chapterNumber = parseInt(result);
-    if (isNaN(chapterNumber)) return;
-    return chapterNumber;
-};
 
 const Reader: React.FC = () => {
     const { pageNumberInputRef, validateDirectory, setContextMenuData } = useAppContext();
@@ -77,9 +45,6 @@ const Reader: React.FC = () => {
     const isLoadingManga = useAppSelector((store) => store.reader.loading !== null);
 
     const libraryItem = useAppSelector((store) => selectLibraryItem(store, linkInReader));
-    const isAniSearchOpen = useAppSelector((store) => store.ui.isOpen.anilist.search);
-    const isAniEditOpen = useAppSelector((store) => store.ui.isOpen.anilist.edit);
-
     const dispatch = useAppDispatch();
 
     const [images, setImages] = useState<string[]>([]);
@@ -1122,8 +1087,6 @@ const Reader: React.FC = () => {
                 setPrevNextChapter={setPrevNextChapter}
             />
 
-            {isAniSearchOpen && <AnilistSearch />}
-            {isAniEditOpen && <AnilistEdit />}
             <div className="hiddenPageMover" style={{ display: "none" }}>
                 <button ref={openPrevPageRef} onClick={openPrevPage}>
                     Prev

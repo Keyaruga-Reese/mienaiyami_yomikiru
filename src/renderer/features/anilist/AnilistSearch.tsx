@@ -1,35 +1,36 @@
+import { faCompress, faExpand } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { addAnilistTracker } from "@store/anilist";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { getReaderManga } from "@store/reader";
+import { getReaderContent } from "@store/reader";
 import { setAnilistSearchOpen } from "@store/ui";
-import AniList from "@utils/anilist";
+import AniList, { ANILIST_FORMAT_LABEL, ANILIST_STATUS_LABEL } from "@utils/anilist";
 import { useEffect, useState } from "react";
-
 import FocusLock from "react-focus-lock";
 
 const AnilistSearch = () => {
-    const mangaInReader = useAppSelector(getReaderManga);
+    const contentInReader = useAppSelector(getReaderContent);
 
     const [search, setSearch] = useState("");
-    const [result, setResult] = useState<Awaited<ReturnType<typeof AniList.searchManga>>>([]);
+    const [result, setResult] = useState<Anilist.SearchMediaItem[]>([]);
     const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
     const dispatch = useAppDispatch();
     useEffect(() => {
-        setSearch(mangaInReader?.title || "");
-    }, [mangaInReader?.title]);
+        setSearch(contentInReader?.title || "");
+    }, [contentInReader?.title]);
     useEffect(() => {
-        AniList.searchManga(search).then((e) => {
+        AniList.searchMedia(search).then((e) => {
             setResult(e);
         });
     }, [search]);
 
     const handleItemClick = (anilistMediaId: number) => {
-        if (mangaInReader) {
+        if (contentInReader) {
             dispatch(
                 addAnilistTracker({
                     anilistMediaId,
-                    localURL: mangaInReader.link,
+                    localURL: contentInReader.link,
                 }),
             );
             dispatch(setAnilistSearchOpen(false));
@@ -56,7 +57,6 @@ const AnilistSearch = () => {
                         if (e.key === "Escape") dispatch(setAnilistSearchOpen(false));
                     }}
                     tabIndex={-1}
-                    // ref={contRef}
                 >
                     <h1>Add Tracking</h1>
                     <div className="searchBar">
@@ -69,7 +69,7 @@ const AnilistSearch = () => {
                             ref={(node) => {
                                 if (node) node.focus();
                             }}
-                            defaultValue={mangaInReader?.title || ""}
+                            defaultValue={contentInReader?.title || ""}
                             onChange={(e) => {
                                 if (searchTimeout) clearTimeout(searchTimeout);
                                 const value = e.currentTarget.value;
@@ -86,18 +86,8 @@ const AnilistSearch = () => {
                             <p>No Result</p>
                         ) : (
                             <ol>
-                                {result.map((e, i) => (
-                                    <ResultListItem
-                                        english={e.title.english}
-                                        romaji={e.title.romaji}
-                                        native={e.title.native}
-                                        id={e.id}
-                                        cover={e.coverImage.medium}
-                                        status={e.status}
-                                        startDate={`${e.startDate.year}-${e.startDate.month}-${e.startDate.day}`}
-                                        key={e.title.romaji + i}
-                                        onClick={() => handleItemClick(e.id)}
-                                    />
+                                {result.map((e) => (
+                                    <ResultListItem item={e} key={e.id} onClick={() => handleItemClick(e.id)} />
                                 ))}
                             </ol>
                         )}
@@ -108,42 +98,35 @@ const AnilistSearch = () => {
     );
 };
 
-const ResultListItem = ({
-    english,
-    romaji,
-    native,
-    cover,
-    startDate,
-    status,
-    onClick,
-}: {
-    english: string;
-    romaji: string;
-    native: string;
-    cover: string;
-    startDate: string;
-    id: number;
-    status: "FINISHED" | "RELEASING" | "CANCELLED" | "HIATUS";
+type ResultListItemProps = {
+    item: Anilist.SearchMediaItem;
     onClick: () => void;
-}) => {
+};
+
+const ResultListItem = ({ item, onClick }: ResultListItemProps) => {
+    const { title, coverImage, startDate, status, format } = item;
+    const displayTitle = title.english || title.romaji || title.native || "~";
+    const startDateStr = `${startDate.year ?? "?"}-${startDate.month ?? "?"}-${startDate.day ?? "?"}`;
+    const formatStr = ANILIST_FORMAT_LABEL[format] ?? format;
+    const statusStr = ANILIST_STATUS_LABEL[status] ?? status;
+
     return (
         <li>
             <button className="row" onClick={onClick}>
-                <div className="cover" style={{ backgroundImage: `url(${cover})` }}>
-                    {/* <img src={cover} alt="cover" draggable={false} /> */}
-                </div>
+                <div className="cover" style={{ backgroundImage: `url(${coverImage.medium})` }} />
                 <div className="col">
-                    <span title={english || romaji || native}>{english || romaji || native}</span>
-                    <span title={romaji || "~"}>{romaji || "~"}</span>
-                    <span title={native || "~"}>{native || "~"}</span>
-                    <div className="row">
+                    <span title={displayTitle}>{displayTitle}</span>
+                    <span title={title.romaji ?? "~"}>{title.romaji ?? "~"}</span>
+                    <span title={title.native ?? "~"}>{title.native ?? "~"}</span>
+                    <div className="row meta">
                         <span className="row">
-                            <span>Started</span>
-                            <span>{startDate}</span>
+                            <span className="badge">{formatStr}</span>
                         </span>
                         <span className="row">
-                            <span>Status</span>
-                            <span>{status}</span>
+                            <span className="badge">Started: {startDateStr}</span>
+                        </span>
+                        <span className="row">
+                            <span className="badge">{statusStr}</span>
                         </span>
                     </div>
                 </div>

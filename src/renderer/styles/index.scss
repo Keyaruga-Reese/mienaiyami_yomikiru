@@ -393,6 +393,8 @@
                     padding: 10px;
                 }
             }
+            @import "mini/readerAnilist";
+
             #anilistLogin {
                 width: 100%;
                 height: 100%;
@@ -982,7 +984,6 @@
                 }
                 @import "mini/readerSideList";
                 @import "mini/readerSettings";
-                @import "mini/readerAnilist";
                 @import "mini/imgCont";
                 .zenModePageNumber {
                     pointer-events: none;

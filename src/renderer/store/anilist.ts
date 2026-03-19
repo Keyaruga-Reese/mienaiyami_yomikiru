@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import AniList from "@utils/anilist";
-import { getStorageItem, setStorageItem } from "@utils/localStorage";
 
 type AnilistState = {
     token: string | null;
@@ -9,20 +8,10 @@ type AnilistState = {
 };
 
 const initialState: AnilistState = {
-    token: getStorageItem("ANILIST_TOKEN") || null,
-    tracking: loadTrackingFromStorage(),
+    token: AniList.getStorageToken(),
+    tracking: AniList.loadTrackingFromStorage(),
     currentManga: null,
 };
-
-function loadTrackingFromStorage(): Anilist.TrackStore {
-    try {
-        const tracking = JSON.parse(getStorageItem("ANILIST_TRACKING") || "[]") as Anilist.TrackStore;
-        return tracking.filter((e) => window.fs.existsSync(e.localURL));
-    } catch (e) {
-        console.error(e);
-        return [];
-    }
-}
 
 const anilistSlice = createSlice({
     name: "anilist",
@@ -30,25 +19,24 @@ const anilistSlice = createSlice({
     reducers: {
         setAnilistToken: (state, action: PayloadAction<string | null>) => {
             const newToken = action.payload || "";
-            setStorageItem("ANILIST_TOKEN", newToken);
+            AniList.setStorageToken(newToken);
             AniList.setToken(newToken);
             state.token = action.payload;
         },
 
         addAnilistTracker: (state, action: PayloadAction<Anilist.TrackItem>) => {
             state.tracking.push(action.payload);
-            setStorageItem("ANILIST_TRACKING", JSON.stringify(state.tracking));
+            AniList.setStorageTracking(state.tracking);
         },
         /**
          * @param action local URL of manga
          */
         removeAnilistTracker: (state, action: PayloadAction<string>) => {
-            // state.tracking = state.tracking.filter((item) => item.localURL !== action.payload);
             const index = state.tracking.findIndex((item) => item.localURL === action.payload);
             if (index !== -1) {
                 state.tracking.splice(index, 1);
             }
-            setStorageItem("ANILIST_TRACKING", JSON.stringify(state.tracking));
+            AniList.setStorageTracking(state.tracking);
         },
 
         setAnilistCurrentManga: (state, action: PayloadAction<Anilist.MangaData | null>) => {

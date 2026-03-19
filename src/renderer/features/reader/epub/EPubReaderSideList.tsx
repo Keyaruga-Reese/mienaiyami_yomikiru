@@ -1,3 +1,4 @@
+import AnilistBar from "@features/anilist/AnilistBar";
 import { faArrowLeft, faArrowRight, faLocationDot, faThumbtack } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAppSelector } from "@store/hooks";
@@ -58,6 +59,7 @@ const EPubReaderSideList = memo(
     }) => {
         const { contextMenuData, colorSelectData } = useAppContext();
         const appSettings = useAppSelector((store) => store.appSettings);
+        const anilistToken = useAppSelector((store) => store.anilist.token);
         const sideListRef = useRef<HTMLDivElement>(null);
         const [isListOpen, setListOpen] = useState(false);
         const [preventListClose, setPreventListClose] = useState(false);
@@ -230,6 +232,7 @@ const EPubReaderSideList = memo(
                         </div>
                     )}
                 </div>
+                {anilistToken && <AnilistBar />}
                 <div className="tools">
                     <div className="btnOptions">
                         <button

@@ -44,10 +44,10 @@ export default class AniList {
 
     static {
         // for first launch
-        if (getStorageItem("ANILIST_TOKEN") === null) setStorageItem("ANILIST_TOKEN", "");
-        if (getStorageItem("ANILIST_TRACKING") === null) setStorageItem("ANILIST_TRACKING", "[]");
+        if (AniList.getStorageToken() === null) AniList.setStorageToken("");
+        if (AniList.loadTrackingFromStorage().length === 0) AniList.setStorageTracking([]);
 
-        const token = getStorageItem("ANILIST_TOKEN") || "";
+        const token = AniList.getStorageToken() || "";
         AniList.#token = token;
         if (token)
             AniList.checkToken(token).then((e) => {
@@ -63,6 +63,29 @@ export default class AniList {
     }
     static setToken(token: string) {
         AniList.#token = token;
+    }
+
+    static getStorageToken(): string | null {
+        const value = getStorageItem("ANILIST_TOKEN");
+        return value || null;
+    }
+
+    static setStorageToken(token: string) {
+        setStorageItem("ANILIST_TOKEN", token);
+    }
+
+    static setStorageTracking(tracking: Anilist.TrackStore) {
+        setStorageItem("ANILIST_TRACKING", JSON.stringify(tracking));
+    }
+
+    static loadTrackingFromStorage(): Anilist.TrackStore {
+        try {
+            const tracking = JSON.parse(getStorageItem("ANILIST_TRACKING") || "[]") as Anilist.TrackStore;
+            return tracking.filter((e) => window.fs.existsSync(e.localURL));
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
     }
     static setCurrentMangaListId(id: null | number) {
         AniList.#currentMangaListId = id;
@@ -156,11 +179,11 @@ export default class AniList {
         return AniList.displayAdultContent ? { ...variables } : { ...variables, displayAdultContent: false };
     }
     /**
-     *
+     * Search manga and novels on Anilist.
      * @param name search term in `English` or `Romaji`
-     * does not include unreleased manga
+     * @returns media items (manga and novels), excludes unreleased
      */
-    static async searchManga(name: string) {
+    static async searchMedia(name: string): Promise<Anilist.SearchMediaItem[]> {
         if (!name) return [];
         const query = `#graphql
         query($search: String,$displayAdultContent: Boolean){
@@ -190,24 +213,7 @@ export default class AniList {
             search: name,
         });
         const data = await AniList.fetch(query, variables);
-        if (data)
-            return data.Page.media.filter((e: any) => e.format !== "NOVEL") as {
-                id: number;
-                title: {
-                    english: string;
-                    romaji: string;
-                    native: string;
-                };
-                startDate: {
-                    year: number;
-                    month: number;
-                    day: number;
-                };
-                coverImage: {
-                    medium: string;
-                };
-                status: "FINISHED" | "RELEASING" | "CANCELLED" | "HIATUS";
-            }[];
+        if (data) return (data.Page.media ?? []) as Anilist.SearchMediaItem[];
         return [];
     }
     static async getMangaData(mediaId: number) {
@@ -240,3 +246,24 @@ export default class AniList {
         }
     }
 }
+
+/** Human-readable labels for Anilist media format values. */
+export const ANILIST_FORMAT_LABEL: Record<Anilist.MediaFormat, string> = {
+    MANGA: "Manga",
+    NOVEL: "Novel",
+    LIGHT_NOVEL: "Light Novel",
+    ONE_SHOT: "One Shot",
+    MANHWA: "Manhwa",
+    MANHUA: "Manhua",
+    DOUJINSHI: "Doujinshi",
+    OEL: "OEL",
+};
+
+/** Human-readable labels for Anilist media status values. */
+export const ANILIST_STATUS_LABEL: Record<Anilist.MediaStatus, string> = {
+    FINISHED: "Finished",
+    RELEASING: "Releasing",
+    CANCELLED: "Cancelled",
+    HIATUS: "Hiatus",
+    NOT_YET_RELEASED: "Not Yet Released",
+};

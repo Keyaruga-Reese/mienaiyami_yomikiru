@@ -188,6 +188,13 @@ export const getReaderManga = (state: RootState) => {
     }
     return null;
 };
+
+/** Returns content with link and title for both manga and book readers. */
+export const getReaderContent = (state: RootState): { link: string; title: string } | null => {
+    const content = state.reader.content;
+    if (!content) return null;
+    return { link: content.link, title: content.title };
+};
 export const getReaderMangaState = (state: RootState) => {
     if (state.reader.type === "manga") {
         return state.reader;
