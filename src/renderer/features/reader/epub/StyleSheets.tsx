@@ -12,29 +12,32 @@ const StyleSheets = memo(
                             try {
                                 const stylesheet = document.createElement("style");
                                 let txt = await window.fs.readFile(url, "utf-8");
-                                const matches = Array.from(txt.matchAll(/url\((.*?)\);/gi));
-                                matches.forEach((e) => {
-                                    // for font
-                                    let originalURL = e[1];
-                                    if (originalURL.startsWith(`'`) || originalURL.startsWith(`"`))
-                                        originalURL = originalURL.slice(1, -1);
-                                    txt = txt.replaceAll(
-                                        e[1],
-                                        `"file://${window.path
-                                            .join(window.path.dirname(url), originalURL)
-                                            .replaceAll("\\", "/")}"`,
-                                    );
+                                /** Matches url() with optional quotes; does not require semicolon (handles url() format() in @font-face) */
+                                const urlRegex = /url\s*\(\s*(?:"([^"]*)"|'([^']*)'|([^"')]+))\s*\)/gi;
+                                txt = txt.replace(urlRegex, (_match, dq, sq, uq) => {
+                                    const originalURL = (dq ?? sq ?? uq ?? "").trim();
+                                    const resolved = window.path
+                                        .join(window.path.dirname(url), originalURL)
+                                        .replaceAll("\\", "/");
+                                    return `url("file://${resolved}")`;
                                 });
                                 // to make sure styles don't apply outside
                                 // todo, can use scope in latest version of electron
                                 const ast = css.parse(txt);
-                                ast.stylesheet?.rules.forEach((e) => {
+                                /** EPUB injects body.innerHTML into .cont, so body/html don't exist; map them to the content container */
+                                const epubRoot = "#EPubReader section.main .cont";
+                                const scopeRule = (e: css.Node) => {
                                     if (e.type === "rule") {
-                                        (e as css.Rule).selectors = (e as css.Rule).selectors?.map((e) =>
-                                            e.includes("section.main") ? e : `#EPubReader section.main ${e}`,
-                                        );
+                                        (e as css.Rule).selectors = (e as css.Rule).selectors?.map((s) => {
+                                            if (s.includes("section.main")) return s;
+                                            const withBodyHtml = s.replace(/\b(body|html)\b/gi, epubRoot);
+                                            return withBodyHtml !== s ? withBodyHtml : `${epubRoot} ${s}`;
+                                        });
+                                    } else if (e.type === "media") {
+                                        (e as css.Media).rules?.forEach(scopeRule);
                                     }
-                                });
+                                };
+                                ast.stylesheet?.rules.forEach(scopeRule);
                                 txt = css.stringify(ast);
                                 stylesheet.innerHTML = txt;
                                 node.appendChild(stylesheet);
