@@ -17,7 +17,7 @@ import { getShortcutsMapped } from "@store/shortcuts";
 import { refreshThemes, setTheme } from "@store/themes";
 import { setAnilistEditOpen, setAnilistLoginOpen, setAnilistSearchOpen, toggleSettingsOpen } from "@store/ui";
 import { dialogUtils } from "@utils/dialog";
-import { keyFormatter } from "@utils/keybindings";
+import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
 import {
     createContext,
     createRef,
@@ -434,12 +434,8 @@ const App = (): ReactElement => {
     }, [appSettings, openInReaderIfValid]);
 
     useEffect(() => {
-        const eventsOnStart = (e: KeyboardEvent) => {
-            const keyStr = keyFormatter(e);
-            if (keyStr === "") return;
-            const i = (keys: string[]) => {
-                return keys.includes(keyStr);
-            };
+        const handleShortcut = (keyStr: string, e: Event) => {
+            const i = (keys: string[]) => keys.includes(keyStr);
             const afterUIScale = () => {
                 process.platform === "win32" &&
                     window.electron.currentWindow.setTitleBarOverlay()({
@@ -452,23 +448,28 @@ const App = (): ReactElement => {
             };
             switch (true) {
                 case i(shortcutsMapped.navToHome):
+                    e.preventDefault();
                     if (window.electron.currentWindow.isFullScreen())
                         window.electron.currentWindow.setFullScreen(false);
                     if (isReaderOpen) return closeReader();
                     window.location.reload();
                     break;
                 case i(shortcutsMapped.openSettings):
+                    e.preventDefault();
                     dispatch(toggleSettingsOpen());
                     break;
                 case i(shortcutsMapped.uiSizeReset):
+                    e.preventDefault();
                     window.electron.webFrame.setZoomFactor(1);
                     afterUIScale();
                     break;
                 case i(shortcutsMapped.uiSizeDown):
+                    e.preventDefault();
                     window.electron.webFrame.setZoomFactor(window.electron.webFrame.getZoomFactor() - 0.1);
                     afterUIScale();
                     break;
                 case i(shortcutsMapped.uiSizeUp):
+                    e.preventDefault();
                     window.electron.webFrame.setZoomFactor(window.electron.webFrame.getZoomFactor() + 0.1);
                     afterUIScale();
                     break;
@@ -476,9 +477,21 @@ const App = (): ReactElement => {
                     break;
             }
         };
-        window.addEventListener("keydown", eventsOnStart);
+        const onKeyDown = (e: KeyboardEvent) => {
+            const keyStr = keyFormatter(e);
+            if (keyStr === "") return;
+            handleShortcut(keyStr, e);
+        };
+        const onMouseDown = (e: MouseEvent) => {
+            const keyStr = mouseEventFormatter(e);
+            if (keyStr === "") return;
+            handleShortcut(keyStr, e);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("mousedown", onMouseDown);
         return () => {
-            window.removeEventListener("keydown", eventsOnStart);
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("mousedown", onMouseDown);
         };
     }, [shortcutsMapped, isReaderOpen]);
 

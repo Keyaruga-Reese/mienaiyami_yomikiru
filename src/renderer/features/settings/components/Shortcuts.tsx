@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { removeShortcuts, setShortcuts } from "@store/shortcuts";
 import { dialogUtils } from "@utils/dialog";
-import { keyFormatter, SHORTCUT_COMMAND_MAP } from "@utils/keybindings";
+import { keyFormatter, mouseEventFormatter, SHORTCUT_COMMAND_MAP } from "@utils/keybindings";
 import type { ReactElement } from "react";
 import { useSettingsContext } from "../Settings";
 import { reservedKeys, SHORTCUT_LIMIT } from "../utils/constants";
@@ -13,6 +13,25 @@ const ShortcutInput = ({ command }: { command: ShortcutCommands }) => {
     const dispatch = useAppDispatch();
     const shortcut = shortcuts.find((e) => e.command === command);
     if (!shortcut) return <p>Command &quot;{command}&quot; not found.</p>;
+
+    const tryAddShortcut = (newKey: string, inputRef?: HTMLInputElement) => {
+        const dupIndex = shortcuts.findIndex((s) => s.keys.includes(newKey));
+        if (dupIndex >= 0) {
+            const name =
+                SHORTCUT_COMMAND_MAP.find((s) => s.command === shortcuts[dupIndex].command)?.name || command;
+            window.logger.warn(`"${newKey}" already bound to "${shortcuts[dupIndex].command}"`);
+            dialogUtils.warn({ message: `"${newKey}" already bound to "${name}".` });
+            return;
+        }
+        if (reservedKeys.includes(newKey)) {
+            dialogUtils.warn({ message: "Can't use reserved key combination." });
+            window.logger.warn(`"${newKey}" is reserved key combination.`);
+            inputRef?.focus();
+            return;
+        }
+        dispatch(setShortcuts({ command, key: newKey }));
+    };
+
     return (
         <>
             {shortcut.keys.map((key, i) => (
@@ -51,32 +70,16 @@ const ShortcutInput = ({ command }: { command: ShortcutCommands }) => {
                     onKeyUp={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-
                         const newKey = keyFormatter(e.nativeEvent);
                         if (newKey === "") return;
-                        const dupIndex = shortcuts.findIndex((e) => e.keys.includes(newKey));
-                        if (dupIndex >= 0) {
-                            const name =
-                                SHORTCUT_COMMAND_MAP.find((e) => e.command === shortcuts[dupIndex].command)
-                                    ?.name || command;
-                            window.logger.warn(`"${newKey}" already bound to "${shortcuts[dupIndex].command}"`);
-                            dialogUtils.warn({
-                                message: `"${newKey}" already bound to "${name}".`,
-                            });
-                            return;
-                        }
-
-                        if (reservedKeys.includes(newKey)) {
-                            dialogUtils.warn({
-                                message: "Can't use reserved key combination.",
-                            });
-                            window.logger.warn(`"${newKey}" is reserved key combination.`);
-
-                            e.currentTarget.focus();
-                            return;
-                        }
-
-                        dispatch(setShortcuts({ command, key: newKey }));
+                        tryAddShortcut(newKey, e.currentTarget);
+                    }}
+                    onMouseDown={(e) => {
+                        const newKey = mouseEventFormatter(e.nativeEvent);
+                        if (newKey === "") return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        tryAddShortcut(newKey);
                     }}
                     placeholder="Add New"
                     readOnly
@@ -94,6 +97,10 @@ const Shortcuts = (): ReactElement => {
             <ul>
                 <li>Some changes may require app to restart.</li>
                 <li>You can use middle mouse button or grab to scroll reader.</li>
+                <li>
+                    Mouse button 4 or 5 (back/forward): hover over &quot;Add New&quot; input first, then click to
+                    bind.
+                </li>
                 <li>
                     Use <code>Backspace</code> to clear key binding.
                 </li>

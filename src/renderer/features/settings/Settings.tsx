@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { setSettingsOpen } from "@store/ui";
-import { keyFormatter } from "@utils/keybindings";
+import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
 import {
     createContext,
     type ReactElement,
@@ -91,25 +91,36 @@ const Settings = (): ReactElement => {
     }, [isSettingOpen]);
 
     useEffect(() => {
-        const keydownEvent = (e: KeyboardEvent) => {
-            if (!settingContRef.current?.contains(document.activeElement)) return;
-            const keyStr = keyFormatter(e);
-            if (keyStr === "") return;
-            const i = (keys: string[]) => {
-                return keys.includes(keyStr);
-            };
+        const handleShortcut = (keyStr: string, e?: Event) => {
+            const i = (keys: string[]) => keys.includes(keyStr);
             switch (true) {
-                case i(shortcuts.find((e) => e.command === "nextChapter")?.keys || []):
+                case i(shortcuts.find((s) => s.command === "nextChapter")?.keys || []):
+                    e?.preventDefault();
                     nextTab();
                     break;
-                case i(shortcuts.find((e) => e.command === "prevChapter")?.keys || []):
+                case i(shortcuts.find((s) => s.command === "prevChapter")?.keys || []):
+                    e?.preventDefault();
                     prevTab();
                     break;
             }
         };
-        window.addEventListener("keydown", keydownEvent);
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (!settingContRef.current?.contains(document.activeElement)) return;
+            const keyStr = keyFormatter(e);
+            if (keyStr === "") return;
+            handleShortcut(keyStr, e);
+        };
+        const onMouseDown = (e: MouseEvent) => {
+            if (!settingContRef.current?.contains(e.target as Node)) return;
+            const keyStr = mouseEventFormatter(e);
+            if (keyStr === "") return;
+            handleShortcut(keyStr, e);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("mousedown", onMouseDown);
         return () => {
-            window.removeEventListener("keydown", keydownEvent);
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("mousedown", onMouseDown);
         };
     }, [shortcuts, nextTab, prevTab]);
 

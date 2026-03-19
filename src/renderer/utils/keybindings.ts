@@ -32,12 +32,12 @@ export const SHORTCUT_COMMAND_MAP = [
     {
         command: "prevPage" as const,
         name: "Previous Page",
-        defaultKeys: ["a", "left"],
+        defaultKeys: ["a", "left", "mouse4"],
     },
     {
         command: "nextPage" as const,
         name: "Next Page",
-        defaultKeys: ["d", "right"],
+        defaultKeys: ["d", "right", "mouse5"],
     },
     {
         command: "nextChapter" as const,
@@ -254,4 +254,25 @@ export const keyFormatter = (e: KeyboardEvent | React.KeyboardEvent, limited = t
             break;
     }
     return keyStr;
+};
+
+/** MouseEvent.button: 3=back, 4=forward. Only these are supported to avoid breaking left/middle/right click. */
+const MOUSE_BUTTON_TO_KEY: Record<number, string> = {
+    3: "mouse4",
+    4: "mouse5",
+};
+
+/**
+ * Format mouse event to shortcut key string for buttons 4 and 5 (back/forward).
+ * @param e mouse event
+ * @param checkFocus When true (default), returns "" unless document has focus and event target is within focused element
+ * @returns "mouse4" | "mouse5" | ""
+ */
+export const mouseEventFormatter = (e: MouseEvent, checkFocus = true): string => {
+    if (checkFocus) {
+        if (!document.hasFocus()) return "";
+        const active = document.activeElement;
+        if (!active || !active.contains(e.target as Node)) return "";
+    }
+    return MOUSE_BUTTON_TO_KEY[e.button] ?? "";
 };

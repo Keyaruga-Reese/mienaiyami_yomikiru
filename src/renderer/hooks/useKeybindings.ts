@@ -4,6 +4,7 @@ import { keyFormatter } from "@utils/keybindings";
 import { type RefObject, useCallback, useEffect } from "react";
 import { shallowEqual } from "react-redux";
 
+// TODO:
 export type ShortcutHandler = (e: KeyboardEvent) => void;
 
 export type KeybindHandlerConfig = {

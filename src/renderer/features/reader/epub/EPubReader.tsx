@@ -15,7 +15,7 @@ import { colorUtils } from "@utils/color";
 import { dialogUtils } from "@utils/dialog";
 import EPUB, { type EPubData } from "@utils/epub";
 import { DEFAULT_HIGHLIGHT_COLORS, highlightUtils } from "@utils/highlight";
-import { keyFormatter } from "@utils/keybindings";
+import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
 import { getCSSPath } from "@utils/utils";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -556,15 +556,16 @@ const EPubReader: React.FC = () => {
             }
         };
 
-        const registerShortcuts = (e: KeyboardEvent) => {
-            // /&& document.activeElement!.tagName === "BODY"
+        type ShortcutEv = {
+            preventDefault: () => void;
+            stopPropagation: () => void;
+            repeat: boolean;
+            key?: string;
+        };
+        const handleShortcut = (keyStr: string, e: ShortcutEv): boolean => {
             window.app.keyRepeated = e.repeat;
-            const keyStr = keyFormatter(e);
-            if (keyStr === "" && e.key !== "Escape") return;
 
-            const is = (keys: string[]) => {
-                return keys.includes(keyStr);
-            };
+            const is = (keys: string[]) => keys.includes(keyStr);
             if (is(shortcutsMapped.contextMenu)) {
                 e.stopPropagation();
                 e.preventDefault();
@@ -575,7 +576,7 @@ const EPubReader: React.FC = () => {
                             readerRef.current,
                         ),
                     );
-                return;
+                return true;
             }
             const topBottomLogic =
                 readerRef.current &&
@@ -587,49 +588,47 @@ const EPubReader: React.FC = () => {
                 ) >= readerRef.current.scrollHeight ||
                     readerRef.current.scrollTop < window.innerHeight / 4);
             if (!isSettingOpen && readerState.active && !isLoading) {
-                if ([" ", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+                if (e.key && [" ", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
                 if (!e.repeat) {
                     switch (true) {
                         case is(shortcutsMapped.readerSettings):
                             readerSettingExtender.current?.click();
                             readerSettingExtender.current?.focus();
-                            break;
+                            return true;
                         case is(shortcutsMapped.toggleZenMode):
-                            // makeScrollPos();
                             setZenMode((prev) => !prev);
-                            break;
+                            return true;
                         case e.key === "Escape":
-                            // makeScrollPos();
                             setZenMode(false);
-                            break;
+                            return true;
 
                         case is(shortcutsMapped.nextPage):
                             if (topBottomLogic) openNextChapter();
-                            break;
+                            return true;
                         case is(shortcutsMapped.prevPage):
                             if (topBottomLogic) openPrevChapter();
-                            break;
+                            return true;
                         case is(shortcutsMapped.nextChapter):
                             if (!e.repeat) openNextChapter();
-                            break;
+                            return true;
                         case is(shortcutsMapped.prevChapter):
                             if (!e.repeat) openPrevChapter();
-                            break;
+                            return true;
                         case is(shortcutsMapped.bookmark):
                             if (!e.repeat) addToBookmarkRef.current?.click();
-                            break;
+                            return true;
                         case is(shortcutsMapped.sizePlus):
                             sizePlusRef.current?.click();
-                            break;
+                            return true;
                         case is(shortcutsMapped.sizeMinus):
                             sizeMinusRef.current?.click();
-                            break;
+                            return true;
                         case is(shortcutsMapped.fontSizePlus):
                             fontSizePlusRef.current?.click();
-                            break;
+                            return true;
                         case is(shortcutsMapped.fontSizeMinus):
                             fontSizeMinusRef.current?.click();
-                            break;
+                            return true;
                         default:
                             break;
                     }
@@ -643,17 +642,17 @@ const EPubReader: React.FC = () => {
                             case is(shortcutsMapped.largeScrollReverse):
                                 e.preventDefault();
                                 scrollReader(0 - appSettings.epubReaderSettings.scrollSpeedB);
-                                break;
+                                return true;
                             case is(shortcutsMapped.largeScroll):
                                 e.preventDefault();
                                 scrollReader(appSettings.epubReaderSettings.scrollSpeedB);
-                                break;
+                                return true;
                             case is(shortcutsMapped.scrollDown):
                                 scrollReader(appSettings.epubReaderSettings.scrollSpeedA);
-                                break;
+                                return true;
                             case is(shortcutsMapped.scrollUp):
                                 scrollReader(0 - appSettings.epubReaderSettings.scrollSpeedA);
-                                break;
+                                return true;
                             case is(shortcutsMapped.showHidePageNumberInZen):
                                 setShortcutText(
                                     (!appSettings.epubReaderSettings.showProgressInZenMode ? "Show" : "Hide") +
@@ -665,23 +664,44 @@ const EPubReader: React.FC = () => {
                                             !appSettings.epubReaderSettings.showProgressInZenMode,
                                     }),
                                 );
-                                break;
+                                return true;
                         }
                     }
                 }
             }
+            return false;
         };
-
-        const aaa = () => {
+        const registerShortcuts = (e: KeyboardEvent) => {
+            const keyStr = keyFormatter(e);
+            if (keyStr === "" && e.key !== "Escape") return;
+            handleShortcut(keyStr, e);
+        };
+        const registerMouseShortcuts = (e: MouseEvent) => {
+            const keyStr = mouseEventFormatter(e);
+            if (keyStr === "") return;
+            if (
+                handleShortcut(keyStr, {
+                    preventDefault: () => e.preventDefault(),
+                    stopPropagation: () => e.stopPropagation(),
+                    repeat: false,
+                })
+            )
+                e.preventDefault();
+        };
+        const onPointerUp = () => {
             window.app.keydown = false;
         };
         window.addEventListener("wheel", wheelFunction);
         window.addEventListener("keydown", registerShortcuts);
-        window.addEventListener("keyup", aaa);
+        window.addEventListener("mousedown", registerMouseShortcuts);
+        window.addEventListener("keyup", onPointerUp);
+        window.addEventListener("mouseup", onPointerUp);
         return () => {
             window.removeEventListener("wheel", wheelFunction);
             window.removeEventListener("keydown", registerShortcuts);
-            window.removeEventListener("keyup", aaa);
+            window.removeEventListener("mousedown", registerMouseShortcuts);
+            window.removeEventListener("keyup", onPointerUp);
+            window.removeEventListener("mouseup", onPointerUp);
         };
     }, [isSideListPinned, appSettings, isLoading, shortcutsMapped, isSettingOpen, epubData, readerState.active]);
 
