@@ -233,6 +233,7 @@ const settingSchema = z
                 size: z.boolean(),
                 font: z.boolean(),
                 styles: z.boolean(),
+                background: z.boolean(),
                 scrollSpeed: z.boolean(),
             }),
             showProgressInZenMode: z.boolean(),
@@ -250,6 +251,20 @@ const settingSchema = z
              */
             focusChapterInList: z.boolean(),
             hideSideList: z.boolean(),
+            /** Reading background settings: wallpaper, layer overlay, padding. */
+            backgroundImage: z.object({
+                enabled: z.boolean(),
+                path: z.string(),
+                dimIntensity: z.number(),
+                brightness: z.number(),
+                contrast: z.number(),
+                layer: z.object({
+                    enabled: z.boolean(),
+                    color: z.string(),
+                    opacity: z.number(),
+                }),
+                paddingInline: z.number(),
+            }),
         }),
     })
     .strip()
@@ -377,6 +392,7 @@ const settingSchema = z
                 size: false,
                 font: false,
                 styles: true,
+                background: true,
                 scrollSpeed: true,
             },
             showProgressInZenMode: true,
@@ -388,11 +404,26 @@ const settingSchema = z
             textSelect: true,
             focusChapterInList: true,
             hideSideList: false,
+            backgroundImage: {
+                enabled: false,
+                path: "",
+                dimIntensity: 0,
+                brightness: 100,
+                contrast: 100,
+                layer: {
+                    enabled: false,
+                    color: "#000000",
+                    opacity: 0.8,
+                },
+                paddingInline: 0,
+            },
         },
     });
 
+export const defaultSettings = settingSchema.parse(undefined);
+
 const makeSettingsJson = () => {
-    saveJSONfile(settingsPath, settingSchema.parse(undefined));
+    saveJSONfile(settingsPath, defaultSettings);
 };
 let settingNotFound = false;
 if (!window.fs.existsSync(settingsPath)) {
@@ -402,7 +433,6 @@ if (!window.fs.existsSync(settingsPath)) {
 }
 
 const parseAppSettings = (): z.infer<typeof settingSchema> => {
-    const defaultSettings = settingSchema.parse(undefined);
     if (settingNotFound) {
         settingNotFound = false;
         return defaultSettings;
@@ -430,10 +460,27 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
 
     try {
         const parsedJSON = JSON.parse(window.fs.readFileSync(settingsPath, "utf-8"));
+        const ers = parsedJSON?.epubReaderSettings;
+        if (ers?.backgroundImageLayer !== undefined) {
+            ers.backgroundImage = {
+                ...(typeof ers.backgroundImage === "object" ? ers.backgroundImage : {}),
+                enabled: ers.backgroundImage?.enabled ?? false,
+                path: ers.backgroundImage?.path ?? "",
+                dimIntensity: ers.backgroundImageDimIntensity ?? 0,
+                brightness: ers.backgroundImageBrightness ?? 100,
+                contrast: ers.backgroundImageContrast ?? 100,
+                layer: ers.backgroundImageLayer ?? { enabled: true, color: "#000000", opacity: 0.8 },
+                paddingInline: ers.backgroundPaddingInline ?? 0,
+            };
+            delete ers.backgroundImageLayer;
+            delete ers.backgroundImageDimIntensity;
+            delete ers.backgroundImageBrightness;
+            delete ers.backgroundImageContrast;
+            delete ers.backgroundPaddingInline;
+        }
         return settingSchema
             .catch(({ error, input }) => {
                 const location = [] as string[];
-                const defaultSettings = settingSchema.parse(undefined);
                 const fixed = { ...input };
                 error.issues.forEach((e) => {
                     location.push(e.path.join("."));

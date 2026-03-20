@@ -270,6 +270,28 @@ const Usage: React.FC = () => {
                         </li>
                     </ul>
                 </li>
+                <li id="settings-usage-epubBackground">
+                    <b>EPUB Reader Background:</b> While reading EPUB, open Reader Settings and expand the{" "}
+                    <b>Background</b> section.
+                    <ul>
+                        <li>
+                            Enable <b>Background image (wallpaper)</b>, select an image, then adjust dim intensity,
+                            brightness, and contrast.
+                        </li>
+                        <li>
+                            Optionally enable <b>Image layer overlay</b> and set its color and opacity.
+                        </li>
+                        <li>
+                            <b>Padding inline</b> adds horizontal padding to the content area; works with or
+                            without a background image.
+                        </li>
+                        <li>
+                            To make the content area transparent so the wallpaper shows through behind the text:
+                            use <b>Background Color</b> in <b>Styles &amp; Others</b> above — uncheck default and
+                            set to transparent (e.g. <code>rgba(0,0,0,0)</code>).
+                        </li>
+                    </ul>
+                </li>
                 <li id="settings-usage-customStylesheet">
                     If you know how to write <code>.css</code>, you can customize style of app, more than just
                     theme color that is enabled by &quot;Theme Maker&quot;, by making your custom <code>.css</code>

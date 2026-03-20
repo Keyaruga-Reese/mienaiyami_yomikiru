@@ -849,9 +849,42 @@ const EPubReader: React.FC = () => {
                     style={{ "--neg-brightness": appSettings.epubReaderSettings.forceLowBrightness.value }}
                 ></div>
             )}
+            {appSettings.epubReaderSettings.backgroundImage.enabled &&
+                appSettings.epubReaderSettings.backgroundImage.path && (
+                    <>
+                        <div
+                            className="epubBackgroundWallpaper"
+                            style={{
+                                backgroundImage: `url("file:///${appSettings.epubReaderSettings.backgroundImage.path.replace(/\\/g, "/").replaceAll("#", "%23")}")`,
+                                filter: `brightness(${appSettings.epubReaderSettings.backgroundImage.brightness / 100}) contrast(${appSettings.epubReaderSettings.backgroundImage.contrast / 100})`,
+                            }}
+                        />
+                        {appSettings.epubReaderSettings.backgroundImage.dimIntensity > 0 && (
+                            <div
+                                className="epubBackgroundDim"
+                                style={{
+                                    opacity: appSettings.epubReaderSettings.backgroundImage.dimIntensity / 100,
+                                }}
+                            />
+                        )}
+                        {appSettings.epubReaderSettings.backgroundImage.layer.enabled && (
+                            <div
+                                className="epubBackgroundLayer"
+                                style={{
+                                    backgroundColor: appSettings.epubReaderSettings.backgroundImage.layer.color,
+                                    opacity: appSettings.epubReaderSettings.backgroundImage.layer.opacity,
+                                }}
+                            />
+                        )}
+                    </>
+                )}
             <section
                 className={
                     "main " +
+                    (appSettings.epubReaderSettings.backgroundImage.enabled &&
+                    appSettings.epubReaderSettings.backgroundImage.path
+                        ? "hasBackgroundImage "
+                        : "") +
                     (appSettings.epubReaderSettings.useDefault_fontFamily ? "" : "forceFont ") +
                     (appSettings.epubReaderSettings.useDefault_fontWeight ? "" : "forceFontWeight ") +
                     (appSettings.epubReaderSettings.useDefault_paragraphSpacing ? "" : "forceParaGap ") +
@@ -892,6 +925,7 @@ const EPubReader: React.FC = () => {
                     "--epub-background-color": appSettings.epubReaderSettings.useDefault_backgroundColor
                         ? "var(--body-bg-color)"
                         : appSettings.epubReaderSettings.backgroundColor,
+                    "--epub-cont-padding-inline": `${appSettings.epubReaderSettings.backgroundImage.paddingInline}px`,
                 }}
                 onContextMenu={(e) => {
                     e.stopPropagation();

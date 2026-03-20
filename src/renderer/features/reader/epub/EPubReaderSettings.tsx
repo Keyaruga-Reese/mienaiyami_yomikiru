@@ -10,6 +10,7 @@ import InputRange from "@ui/InputRange";
 import InputSelect from "@ui/InputSelect";
 import { colorUtils } from "@utils/color";
 import { memo, useEffect, useLayoutEffect, useState } from "react";
+import BackgroundSettings from "./components/BackgroundSettings";
 
 const EPUBReaderSettings = memo(
     ({
@@ -618,6 +619,7 @@ const EPUBReaderSettings = memo(
                             />
                         </div>
                     </div>
+                    <BackgroundSettings />
                     <div className="settingItem">
                         <div
                             className={

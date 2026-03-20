@@ -1119,6 +1119,28 @@
                         }
                     }
                 }
+                .epubBackgroundWallpaper {
+                    position: fixed;
+                    inset: 0;
+                    z-index: -2;
+                    background-size: cover;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    pointer-events: none;
+                }
+                .epubBackgroundDim {
+                    position: fixed;
+                    inset: 0;
+                    z-index: -1;
+                    background-color: #000;
+                    pointer-events: none;
+                }
+                .epubBackgroundLayer {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 0;
+                    pointer-events: none;
+                }
                 section.main {
                     width: 100%;
                     display: flex;
@@ -1136,6 +1158,10 @@
                     --epub-link-color: none;
                     --epub-background-color: var(--body-bg-color);
                     background-color: var(--epub-background-color);
+                    &.hasBackgroundImage {
+                        background-color: transparent;
+                        z-index: 1;
+                    }
                     color: var(--epub-font-color);
                     &.hyphen {
                         p {
@@ -1259,6 +1285,7 @@
                         transform: translate3d(0, 0, 0);
                         width: var(--width);
                         background-color: var(--epub-background-color);
+                        padding-inline: var(--epub-cont-padding-inline);
                         margin: 20px 0;
                         .findInPage-highlight {
                             color: var(--font-select-color);
