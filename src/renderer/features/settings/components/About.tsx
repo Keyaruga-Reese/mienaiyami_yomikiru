@@ -1,5 +1,5 @@
 import type { AppUpdateChannel } from "@common/types/ipc";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import { faDiscord, faGithub } from "@fortawesome/free-brands-svg-icons";
 import { faHeart } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
@@ -117,6 +117,14 @@ const About: React.FC = () => {
                 {/* <div className="desc"></div> */}
                 <div className="main col">
                     <button
+                        onClick={() =>
+                            window.electron.openExternal("https://github.com/mienaiyami/yomikiru/discussions/495")
+                        }
+                        style={{ border: "2px solid #5865F2" }}
+                    >
+                        <FontAwesomeIcon icon={faDiscord} /> Join Discord
+                    </button>
+                    <button
                         onClick={() => window.electron.openExternal("https://github.com/mienaiyami/yomikiru/")}
                     >
                         <FontAwesomeIcon icon={faGithub} /> Home Page
@@ -141,6 +149,7 @@ const About: React.FC = () => {
                         onClick={() => window.electron.openExternal("https://github.com/sponsors/mienaiyami")}
                         style={{
                             gap: "4px",
+                            border: "2px solid #eb459e",
                         }}
                     >
                         <FontAwesomeIcon icon={faHeart} />

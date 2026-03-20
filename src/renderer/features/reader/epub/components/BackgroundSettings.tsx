@@ -16,9 +16,7 @@ const BackgroundSettings = memo(() => {
     return (
         <div className="settingItem">
             <div
-                className={
-                    "name " + (!appSettings.epubReaderSettings.settingsCollapsed.background ? "expanded " : "")
-                }
+                className={`name ${!appSettings.epubReaderSettings.settingsCollapsed.background ? "expanded " : ""}`}
                 onKeyDown={(e) => {
                     if (e.key === " " || e.key === "Enter") e.currentTarget.click();
                 }}
