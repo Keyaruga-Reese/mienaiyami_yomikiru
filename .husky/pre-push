@@ -3,7 +3,7 @@ current_branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tag
 echo "Current branch: $current_branch"
 
 case "$current_branch" in
-    main|master|develop|staging)
+    main|master|develop|staging|beta)
         echo "Running full checks for protected branch..."
         
         echo "Running full code quality and type checking..."
