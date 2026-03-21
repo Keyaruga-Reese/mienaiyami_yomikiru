@@ -75,6 +75,41 @@ export const SHORTCUT_COMMAND_MAP = [
         defaultKeys: ["ctrl+s"],
     },
     {
+        command: "cyclePresetNext" as const,
+        name: "Next Preset",
+        defaultKeys: ["alt+period"],
+    },
+    {
+        command: "cyclePresetPrev" as const,
+        name: "Previous Preset",
+        defaultKeys: ["alt+comma"],
+    },
+    {
+        command: "selectPreset1" as const,
+        name: "Select Preset 1",
+        defaultKeys: ["alt+1"],
+    },
+    {
+        command: "selectPreset2" as const,
+        name: "Select Preset 2",
+        defaultKeys: ["alt+2"],
+    },
+    {
+        command: "selectPreset3" as const,
+        name: "Select Preset 3",
+        defaultKeys: ["alt+3"],
+    },
+    {
+        command: "selectPreset4" as const,
+        name: "Select Preset 4",
+        defaultKeys: ["alt+4"],
+    },
+    {
+        command: "selectPreset5" as const,
+        name: "Select Preset 5",
+        defaultKeys: ["alt+5"],
+    },
+    {
         command: "showHidePageNumberInZen" as const,
         name: "Show/Hide Page number in Zen Mode",
         defaultKeys: ["p"],

@@ -149,6 +149,32 @@ const readerPresets = createSlice({
             saveReaderPresets(state);
         },
         /**
+         * Moves preset up or down within same-type presets. Swaps with previous/next same-type preset in the shared array.
+         */
+        movePreset: (state, action: PayloadAction<{ id: string; direction: "up" | "down" }>) => {
+            const { id, direction } = action.payload;
+            const idx = state.presets.findIndex((p) => p.id === id);
+            if (idx < 0) return;
+            const preset = state.presets[idx];
+            const type = preset.type;
+            const sameTypeIndices = state.presets.map((p, i) => (p.type === type ? i : -1)).filter((i) => i >= 0);
+            const sameTypeIndex = sameTypeIndices.indexOf(idx);
+            let swapIdx = -1;
+            if (direction === "up") {
+                if (sameTypeIndex > 0) {
+                    swapIdx = sameTypeIndices[sameTypeIndex - 1];
+                }
+            } else {
+                if (sameTypeIndex < sameTypeIndices.length - 1) {
+                    swapIdx = sameTypeIndices[sameTypeIndex + 1];
+                }
+            }
+            if (swapIdx >= 0) {
+                [state.presets[idx], state.presets[swapIdx]] = [state.presets[swapIdx], state.presets[idx]];
+                saveReaderPresets(state);
+            }
+        },
+        /**
          * NOTE: prefer using refreshReaderPresetsWithReconcile instead.
          */
         refreshReaderPresets: (state) => {
@@ -172,9 +198,59 @@ export const {
     updateBookPreset,
     deleteMangaPreset,
     deleteBookPreset,
+    movePreset,
     refreshReaderPresets,
     resetToDefaults,
 } = readerPresets.actions;
+
+/**
+ * Cycles to next preset of given type. Dispatches selectReaderPreset. Returns preset name for shortcut feedback.
+ */
+export const cyclePresetNext =
+    (type: "manga" | "book") =>
+    (dispatch: AppDispatch, getState: () => RootState): string | null => {
+        const state = getState();
+        const presets = state.readerPresets.presets.filter((p) => p.type === type);
+        if (presets.length === 0) return null;
+        const currentId =
+            type === "manga" ? state.appSettings.mangaReaderPresetId : state.appSettings.bookReaderPresetId;
+        const currIdx = presets.findIndex((p) => p.id === currentId);
+        const nextIdx = currIdx < 0 ? 0 : (currIdx + 1) % presets.length;
+        const next = presets[nextIdx];
+        dispatch(selectReaderPreset(next.id));
+        return next.name;
+    };
+
+/**
+ * Cycles to previous preset of given type. Dispatches selectReaderPreset. Returns preset name for shortcut feedback.
+ */
+export const cyclePresetPrev =
+    (type: "manga" | "book") =>
+    (dispatch: AppDispatch, getState: () => RootState): string | null => {
+        const state = getState();
+        const presets = state.readerPresets.presets.filter((p) => p.type === type);
+        if (presets.length === 0) return null;
+        const currentId =
+            type === "manga" ? state.appSettings.mangaReaderPresetId : state.appSettings.bookReaderPresetId;
+        const currIdx = presets.findIndex((p) => p.id === currentId);
+        const nextIdx = currIdx <= 0 ? presets.length - 1 : currIdx - 1;
+        const next = presets[nextIdx];
+        dispatch(selectReaderPreset(next.id));
+        return next.name;
+    };
+
+/**
+ * Selects preset at slot (0-based) for given type. Dispatches selectReaderPreset. Returns preset name for shortcut feedback.
+ */
+export const selectPresetSlot =
+    (type: "manga" | "book", slot: number) =>
+    (dispatch: AppDispatch, getState: () => RootState): string | null => {
+        const presets = getState().readerPresets.presets.filter((p) => p.type === type);
+        if (slot < 0 || slot >= presets.length) return null;
+        const preset = presets[slot];
+        dispatch(selectReaderPreset(preset.id));
+        return preset.name;
+    };
 
 /**
  * Applies reader preset by id to reader settings and sets it as selected.

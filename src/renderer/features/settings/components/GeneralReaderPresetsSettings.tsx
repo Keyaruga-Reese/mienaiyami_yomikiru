@@ -1,10 +1,11 @@
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import {
     addBookPresets,
     addMangaPresets,
     deleteReaderPresetWithFallback,
+    movePreset,
     resetToDefaults,
     selectReaderPreset,
 } from "@store/readerPresets";
@@ -28,13 +29,40 @@ const PresetActionsRow = ({ type, title }: PresetActionsRowProps) => {
         <div className="col">
             <h4>{title} Presets</h4>
             <ul className="presetList">
-                {presets.map((preset) => {
+                {presets.map((preset, idx) => {
                     const isSelected = currentPresetId === preset.id;
+                    const canMoveUp = presets.length > 1 && idx > 0;
+                    const canMoveDown = presets.length > 1 && idx < presets.length - 1;
                     return (
                         <li key={preset.id} className={`row presetItem ${isSelected ? "presetItemSelected" : ""}`}>
                             <span className="presetName" title={preset.name}>
+                                {idx < 5 ? (
+                                    <>
+                                        <code>{idx + 1}</code>{" "}
+                                    </>
+                                ) : (
+                                    ""
+                                )}
                                 {preset.name}
                             </span>
+                            {presets.length > 1 && (
+                                <>
+                                    <button
+                                        disabled={!canMoveUp}
+                                        onClick={() => dispatch(movePreset({ id: preset.id, direction: "up" }))}
+                                        title="Move up"
+                                    >
+                                        <FontAwesomeIcon icon={faChevronUp} />
+                                    </button>
+                                    <button
+                                        disabled={!canMoveDown}
+                                        onClick={() => dispatch(movePreset({ id: preset.id, direction: "down" }))}
+                                        title="Move down"
+                                    >
+                                        <FontAwesomeIcon icon={faChevronDown} />
+                                    </button>
+                                </>
+                            )}
                             <button
                                 onClick={() => dispatch(selectReaderPreset(preset.id))}
                                 className={isSelected ? "optionSelected" : ""}

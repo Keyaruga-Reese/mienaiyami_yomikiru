@@ -11,6 +11,7 @@ import {
     updateReaderBookProgress,
     updateReaderContent,
 } from "@store/reader";
+import { cyclePresetNext, cyclePresetPrev, selectPresetSlot } from "@store/readerPresets";
 import { getShortcutsMapped } from "@store/shortcuts";
 import AniList from "@utils/anilist";
 import { processChapterNumber } from "@utils/chapterUtils";
@@ -687,6 +688,34 @@ const EPubReader: React.FC = () => {
                                     }),
                                 );
                                 return true;
+                            case is(shortcutsMapped.cyclePresetNext): {
+                                const name = dispatch(cyclePresetNext("book")) as string | null;
+                                if (name) setShortcutText(`Preset: ${name}`);
+                                return true;
+                            }
+                            case is(shortcutsMapped.cyclePresetPrev): {
+                                const name = dispatch(cyclePresetPrev("book")) as string | null;
+                                if (name) setShortcutText(`Preset: ${name}`);
+                                return true;
+                            }
+                            case is(shortcutsMapped.selectPreset1):
+                            case is(shortcutsMapped.selectPreset2):
+                            case is(shortcutsMapped.selectPreset3):
+                            case is(shortcutsMapped.selectPreset4):
+                            case is(shortcutsMapped.selectPreset5): {
+                                const slotIdx = [
+                                    shortcutsMapped.selectPreset1,
+                                    shortcutsMapped.selectPreset2,
+                                    shortcutsMapped.selectPreset3,
+                                    shortcutsMapped.selectPreset4,
+                                    shortcutsMapped.selectPreset5,
+                                ].findIndex((keys) => is(keys ?? []));
+                                if (slotIdx >= 0) {
+                                    const name = dispatch(selectPresetSlot("book", slotIdx)) as string | null;
+                                    if (name) setShortcutText(`Preset: ${name}`);
+                                }
+                                return true;
+                            }
                         }
                     }
                 }

@@ -1,4 +1,5 @@
 import { useAppSelector } from "@store/hooks";
+import { Fragment } from "react";
 import { useSettingsContext } from "../Settings";
 
 const Usage: React.FC = () => {
@@ -260,6 +261,29 @@ const Usage: React.FC = () => {
                             <code>{shortcuts.find((e) => e.command === "savePreset")?.keys.join(", ")}</code> saves
                             current settings into the selected preset. Works even when the Reader Settings panel is
                             closed; feedback shows the preset name.
+                        </li>
+                        <li>
+                            <b>Preset keybinds:</b>{" "}
+                            <code>{shortcuts.find((e) => e.command === "cyclePresetNext")?.keys.join(", ")}</code>{" "}
+                            /{" "}
+                            <code>{shortcuts.find((e) => e.command === "cyclePresetPrev")?.keys.join(", ")}</code>{" "}
+                            cycle to next/previous preset.{" "}
+                            {["selectPreset1", "selectPreset2", "selectPreset3", "selectPreset4", "selectPreset5"]
+                                .map((c, idx) => {
+                                    const keys = shortcuts.find((e) => e.command === c)?.keys.join(", ");
+                                    return keys ? (
+                                        <Fragment key={c}>
+                                            <code>
+                                                ({idx + 1}: {keys})
+                                            </code>{" "}
+                                            {idx < 4 ? ", " : ""}
+                                        </Fragment>
+                                    ) : null;
+                                })
+                                .filter(Boolean)}
+                            select preset 1-5 by display order. Slot keys are shared: in manga reader they select
+                            manga presets, in EPUB reader they select book presets. Use up/down buttons to reorder
+                            presets.
                         </li>
                         <li>
                             <b>Clipboard:</b> &quot;Copy Current Preset to Clipboard&quot; copies the selected

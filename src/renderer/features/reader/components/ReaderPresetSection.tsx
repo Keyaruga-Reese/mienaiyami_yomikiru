@@ -94,7 +94,7 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
                 </div>
                 <div className="options">
                     <div className="col">
-                        {presets.map((preset) => {
+                        {presets.map((preset, idx) => {
                             const isSelected = presetId === preset.id;
                             return (
                                 <button
@@ -103,6 +103,13 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
                                     onClick={() => dispatch(selectReaderPreset(preset.id))}
                                     title={preset.name}
                                 >
+                                    {idx < 5 ? (
+                                        <>
+                                            <code>{idx + 1}</code>{" "}
+                                        </>
+                                    ) : (
+                                        ""
+                                    )}
                                     {preset.name}
                                 </button>
                             );

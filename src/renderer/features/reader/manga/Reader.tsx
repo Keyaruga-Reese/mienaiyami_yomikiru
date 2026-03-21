@@ -10,6 +10,7 @@ import {
     updateReaderContent,
     updateReaderMangaCurrentPage,
 } from "@store/reader";
+import { cyclePresetNext, cyclePresetPrev, selectPresetSlot } from "@store/readerPresets";
 import AniList from "@utils/anilist";
 import { processChapterNumber } from "@utils/chapterUtils";
 import { formatUtils } from "@utils/file";
@@ -445,6 +446,34 @@ const Reader: React.FC = () => {
                                 }
                                 setShortcutText("Page per Row - 2odd");
                                 dispatch(setReaderSettings({ pagesPerRowSelected, readerWidth }));
+                                return true;
+                            }
+                            case is(shortcutsMapped.cyclePresetNext): {
+                                const name = dispatch(cyclePresetNext("manga"));
+                                if (name) setShortcutText(`Preset: ${name}`);
+                                return true;
+                            }
+                            case is(shortcutsMapped.cyclePresetPrev): {
+                                const name = dispatch(cyclePresetPrev("manga"));
+                                if (name) setShortcutText(`Preset: ${name}`);
+                                return true;
+                            }
+                            case is(shortcutsMapped.selectPreset1):
+                            case is(shortcutsMapped.selectPreset2):
+                            case is(shortcutsMapped.selectPreset3):
+                            case is(shortcutsMapped.selectPreset4):
+                            case is(shortcutsMapped.selectPreset5): {
+                                const slotIdx = [
+                                    shortcutsMapped.selectPreset1,
+                                    shortcutsMapped.selectPreset2,
+                                    shortcutsMapped.selectPreset3,
+                                    shortcutsMapped.selectPreset4,
+                                    shortcutsMapped.selectPreset5,
+                                ].findIndex((keys) => is(keys ?? []));
+                                if (slotIdx >= 0) {
+                                    const name = dispatch(selectPresetSlot("manga", slotIdx));
+                                    if (name) setShortcutText(`Preset: ${name}`);
+                                }
                                 return true;
                             }
                             default:
