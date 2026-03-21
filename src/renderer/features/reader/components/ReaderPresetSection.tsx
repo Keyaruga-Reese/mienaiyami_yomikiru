@@ -10,7 +10,7 @@ import {
     updateBookPreset,
     updateMangaPreset,
 } from "@store/readerPresets";
-import PresetNameModal from "@ui/PresetNameModal";
+import TextInputModal from "@ui/TextInputModal";
 import { dialogUtils } from "@utils/dialog";
 import type { BookReaderPreset, MangaReaderPreset } from "@utils/readerPresets";
 import type { BookReaderSettings, MangaReaderSettings } from "@utils/readerSettingsSchema";
@@ -21,7 +21,7 @@ type ReaderPresetSectionProps = {
 };
 
 /**
- * Collapsible preset section with selector, add/update/delete, and PresetNameModal.
+ * Collapsible preset section with selector, add/update/delete, and TextInputModal.
  */
 const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
     const dispatch = useAppDispatch();
@@ -176,7 +176,12 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
                 </div>
             </div>
             {showPresetNameModal && (
-                <PresetNameModal onClose={() => setShowPresetNameModal(false)} onSave={handleAddPreset} />
+                <TextInputModal
+                    title="Preset name"
+                    placeholder="Enter preset name"
+                    onClose={() => setShowPresetNameModal(false)}
+                    onSave={handleAddPreset}
+                />
             )}
         </>
     );

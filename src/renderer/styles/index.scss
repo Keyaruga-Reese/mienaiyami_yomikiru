@@ -17,6 +17,7 @@
         }
     }
 }
+// TODO: refactor color/theme system of app
 .refrenceVariable {
     --body-bg-color: #ffffff;
     --sideList-bg-color: var(--topBar-color);
@@ -59,6 +60,10 @@
     --contentMenu-item-color: #fff;
     --contentMenu-item-bg-color-hover: #fff;
     --zenModePage-bg: #fff;
+}
+
+html{
+    --error-color: #c62828;
 }
 
 @layer main {
