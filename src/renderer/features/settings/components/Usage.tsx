@@ -239,6 +239,42 @@ const Usage: React.FC = () => {
                     , it will be copied as text and you can share it anywhere. To install the theme, copy whole
                     text you received and click on &quot;Save Theme from Clipboard&quot;.
                 </li>
+                <li id="settings-usage-readerPresets">
+                    <b>Reader Presets:</b> Quick-switch between reading setups (e.g. 2-page LTR manga vs
+                    vertical-scroll manhwa). Separate preset lists for manga and book (EPUB) readers.
+                    <ul>
+                        <li>
+                            <b>Defaults:</b> Manga — Paged LTR, Long Strip, Long Strip with Gaps. Book — Default,
+                            Continuous. On first run, a &quot;User&quot; preset per type is created with your
+                            current settings.
+                        </li>
+                        <li>
+                            <b>Select</b> applies a preset. <b>Delete</b> (trash icon) removes it; if the deleted
+                            preset was selected, another preset is auto-selected.
+                        </li>
+                        <li>
+                            In Reader Settings: <b>+</b> adds a new preset (name via modal). <b>Save</b> updates
+                            the selected preset with current settings.
+                        </li>
+                        <li>
+                            <code>{shortcuts.find((e) => e.command === "savePreset")?.keys.join(", ")}</code> saves
+                            current settings into the selected preset. Works even when the Reader Settings panel is
+                            closed; feedback shows the preset name.
+                        </li>
+                        <li>
+                            <b>Clipboard:</b> &quot;Copy Current Preset to Clipboard&quot; copies the selected
+                            preset (from each Manga/Book section). &quot;Save Preset from Clipboard&quot; (top,
+                            next to Reset) imports one preset; type is inferred from the JSON.
+                        </li>
+                        <li>
+                            <b>Export/Import:</b> Per manga or book. Export saves custom presets only (defaults
+                            excluded). Import from file for bulk transfer; duplicates by id are skipped.
+                        </li>
+                        <li>
+                            <b>Reset to Default Presets</b> restores built-in presets to their original state.
+                        </li>
+                    </ul>
+                </li>
                 <li>
                     <a
                         id="settings-usage-pdfScale"

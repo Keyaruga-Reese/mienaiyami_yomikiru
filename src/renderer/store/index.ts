@@ -7,6 +7,7 @@ import libraryReducer from "./library";
 import mainSettingsReducer from "./mainSettings";
 import prevNextChapterReducer from "./prevNextChapter";
 import readerReducer from "./reader";
+import readerPresetsReducer from "./readerPresets";
 import shortcutsReducer from "./shortcuts";
 import themesReducer from "./themes";
 import uiReducer from "./ui";
@@ -14,6 +15,7 @@ import uiReducer from "./ui";
 const store = configureStore({
     reducer: {
         appSettings: appSettingsReducer,
+        readerPresets: readerPresetsReducer,
         theme: themesReducer,
         bookmarks: bookmarksReducer,
         bookNotes: bookNotesReducer,

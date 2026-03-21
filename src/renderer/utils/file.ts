@@ -1,8 +1,10 @@
 const userDataURL = window.electron.app.getPath("userData");
 const settingsPath = window.path.join(userDataURL, "settings.json");
+// TODO: remove bookmarks and history as no longer used
 const bookmarksPath = window.path.join(userDataURL, "bookmarks.json");
 const historyPath = window.path.join(userDataURL, "history.json");
 const themesPath = window.path.join(userDataURL, "themes.json");
+const readerPresetsPath = window.path.join(userDataURL, "reader-presets.json");
 const shortcutsPath = window.path.join(userDataURL, "shortcuts.json");
 
 const saveJSONfile = (path: string, data: any) => {
@@ -22,7 +24,16 @@ const saveJSONfile = (path: string, data: any) => {
         }
 };
 
-export { userDataURL, settingsPath, bookmarksPath, historyPath, themesPath, shortcutsPath, saveJSONfile };
+export {
+    userDataURL,
+    settingsPath,
+    bookmarksPath,
+    historyPath,
+    themesPath,
+    readerPresetsPath,
+    shortcutsPath,
+    saveJSONfile,
+};
 
 export const formatUtils = {
     image: {

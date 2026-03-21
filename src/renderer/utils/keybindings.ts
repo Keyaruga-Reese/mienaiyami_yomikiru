@@ -70,6 +70,11 @@ export const SHORTCUT_COMMAND_MAP = [
         defaultKeys: ["q"],
     },
     {
+        command: "savePreset" as const,
+        name: "Save current settings into selected preset",
+        defaultKeys: ["ctrl+s"],
+    },
+    {
         command: "showHidePageNumberInZen" as const,
         name: "Show/Hide Page number in Zen Mode",
         defaultKeys: ["p"],

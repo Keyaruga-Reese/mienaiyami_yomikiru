@@ -13,6 +13,7 @@ import {
 } from "@store/library";
 import { getMainSettings, setMainSettings } from "@store/mainSettings";
 import { resetReaderState } from "@store/reader";
+import { refreshReaderPresetsWithReconcile } from "@store/readerPresets";
 import { getShortcutsMapped } from "@store/shortcuts";
 import { refreshThemes, setTheme } from "@store/themes";
 import { setAnilistEditOpen, setAnilistLoginOpen, setAnilistSearchOpen, toggleSettingsOpen } from "@store/ui";
@@ -30,7 +31,15 @@ import {
 import { shallowEqual } from "react-redux";
 import Main from "./Main";
 import TopBar from "./TopBar";
-import { bookmarksPath, formatUtils, historyPath, promptSelectDir, settingsPath, themesPath } from "./utils/file";
+import {
+    bookmarksPath,
+    formatUtils,
+    historyPath,
+    promptSelectDir,
+    readerPresetsPath,
+    settingsPath,
+    themesPath,
+} from "./utils/file";
 
 interface AppContext {
     pageNumberInputRef: React.RefObject<HTMLInputElement>;
@@ -199,7 +208,7 @@ const App = (): ReactElement => {
         // here bcoz reload doesnt make window exit fullscreen
         if (window.electron.currentWindow.isFullScreen()) window.electron.currentWindow.setFullScreen(false);
 
-        const filesToWatch = [historyPath, bookmarksPath];
+        const filesToWatch = [historyPath, bookmarksPath, readerPresetsPath];
         if (appSettings.syncSettings) filesToWatch.push(settingsPath);
         if (appSettings.syncThemes) filesToWatch.push(themesPath);
         const closeWatcher = window.chokidar.watch({
@@ -208,6 +217,7 @@ const App = (): ReactElement => {
             callback: (path) => {
                 if (path === settingsPath) dispatch(refreshAppSettings());
                 if (path === themesPath) dispatch(refreshThemes());
+                if (path === readerPresetsPath) dispatch(refreshReaderPresetsWithReconcile());
             },
         });
 

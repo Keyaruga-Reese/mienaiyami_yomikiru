@@ -1,7 +1,10 @@
+import ReaderPresetSection from "@features/reader/components/ReaderPresetSection";
 import { faBars, faMinus, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { setEpubReaderSettings } from "@store/appSettings";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
+import { updateBookPreset } from "@store/readerPresets";
+import { getShortcutsMapped } from "@store/shortcuts";
 import InputCheckbox from "@ui/InputCheckbox";
 import InputCheckboxColor from "@ui/InputCheckboxColor";
 import InputCheckboxNumber from "@ui/InputCheckboxNumber";
@@ -9,6 +12,7 @@ import InputNumber from "@ui/InputNumber";
 import InputRange from "@ui/InputRange";
 import InputSelect from "@ui/InputSelect";
 import { colorUtils } from "@utils/color";
+import { keyFormatter } from "@utils/keybindings";
 import { memo, useEffect, useLayoutEffect, useState } from "react";
 import BackgroundSettings from "./components/BackgroundSettings";
 
@@ -33,6 +37,11 @@ const EPUBReaderSettings = memo(
         fontSizeMinusRef: React.RefObject<HTMLButtonElement>;
     }) => {
         const appSettings = useAppSelector((store) => store.appSettings);
+        const shortcutsMapped = useAppSelector(getShortcutsMapped);
+        const currentPresetName = useAppSelector((s) => {
+            const id = s.appSettings.bookReaderPresetId;
+            return id ? s.readerPresets.presets.find((p) => p.id === id)?.name : null;
+        });
         const dispatch = useAppDispatch();
 
         const [isReaderSettingsOpen, setReaderSettingOpen] = useState(false);
@@ -51,19 +60,34 @@ const EPUBReaderSettings = memo(
 
         const maxWidth = 100;
         useEffect(() => {
-            if (isReaderSettingsOpen) {
-                const f = (e: KeyboardEvent) => {
-                    if (e.key === "Escape") {
-                        setReaderSettingOpen(false);
-                        if (readerRef.current) readerRef.current.focus();
+            const f = (e: KeyboardEvent) => {
+                if (isReaderSettingsOpen && e.key === "Escape") {
+                    setReaderSettingOpen(false);
+                    if (readerRef.current) readerRef.current.focus();
+                    return;
+                }
+                const keyStr = keyFormatter(e);
+                if (keyStr && shortcutsMapped.savePreset?.includes(keyStr)) {
+                    e.preventDefault();
+                    const id = appSettings.bookReaderPresetId;
+                    if (id) {
+                        dispatch(updateBookPreset({ id, data: appSettings.epubReaderSettings }));
+                        setShortcutText(`Saved to preset "${currentPresetName ?? "Unknown"}"`);
                     }
-                };
-                window.addEventListener("keydown", f);
-                return () => {
-                    window.removeEventListener("keydown", f);
-                };
-            }
-        }, [isReaderSettingsOpen]);
+                }
+            };
+            window.addEventListener("keydown", f);
+            return () => window.removeEventListener("keydown", f);
+        }, [
+            isReaderSettingsOpen,
+            shortcutsMapped,
+            appSettings.bookReaderPresetId,
+            appSettings.epubReaderSettings,
+            currentPresetName,
+            dispatch,
+            setShortcutText,
+            readerRef,
+        ]);
         return (
             <div
                 id="epubReaderSettings"
@@ -92,6 +116,7 @@ const EPUBReaderSettings = memo(
                     <FontAwesomeIcon icon={isReaderSettingsOpen ? faTimes : faBars} />
                 </button>
                 <div className="main">
+                    <ReaderPresetSection type="book" />
                     <div className="settingItem">
                         <div
                             className={

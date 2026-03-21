@@ -12,6 +12,7 @@ import AnilistSetting from "./AnilistSetting";
 import CustomTempLocation from "./CustomTempLocation";
 import FileExplorerOptions from "./FileExplorerOptions";
 import GeneralPDFSettings from "./GeneralPDFSettings";
+import GeneralReaderPresetsSettings from "./GeneralReaderPresetsSettings";
 import GeneralThemeSettings from "./GeneralThemeSettings";
 
 const GeneralSettings: React.FC = () => {
@@ -40,6 +41,7 @@ const GeneralSettings: React.FC = () => {
                 </div>
             </div>
             <GeneralThemeSettings />
+            <GeneralReaderPresetsSettings />
             {process.platform === "win32" && <FileExplorerOptions />}
             <AnilistSetting />
             <GeneralPDFSettings />

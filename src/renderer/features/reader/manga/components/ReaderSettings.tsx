@@ -1,3 +1,4 @@
+import ReaderPresetSection from "@features/reader/components/ReaderPresetSection";
 import {
     faArrowsAltH,
     faArrowsAltV,
@@ -10,6 +11,8 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { setReaderSettings } from "@store/appSettings";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
+import { updateMangaPreset } from "@store/readerPresets";
+import { getShortcutsMapped } from "@store/shortcuts";
 import InputCheckbox from "@ui/InputCheckbox";
 import InputCheckboxColor from "@ui/InputCheckboxColor";
 import InputCheckboxNumber from "@ui/InputCheckboxNumber";
@@ -17,6 +20,7 @@ import InputNumber from "@ui/InputNumber";
 import InputRange from "@ui/InputRange";
 import InputSelect from "@ui/InputSelect";
 import { colorUtils } from "@utils/color";
+import { keyFormatter } from "@utils/keybindings";
 import { memo, useEffect, useState } from "react";
 
 const ReaderSettings = memo(
@@ -36,24 +40,44 @@ const ReaderSettings = memo(
         sizeMinusRef: React.RefObject<HTMLButtonElement>;
     }) => {
         const appSettings = useAppSelector((store) => store.appSettings);
+        const shortcutsMapped = useAppSelector(getShortcutsMapped);
+        const currentPresetName = useAppSelector((s) => {
+            const id = s.appSettings.mangaReaderPresetId;
+            return id ? s.readerPresets.presets.find((p) => p.id === id)?.name : null;
+        });
         const dispatch = useAppDispatch();
         const [isReaderSettingsOpen, setReaderSettingOpen] = useState(false);
         const [maxWidth, setMaxWidth] = useState<number>(appSettings.readerSettings.widthClamped ? 100 : 500);
 
         useEffect(() => {
-            if (isReaderSettingsOpen) {
-                const f = (e: KeyboardEvent) => {
-                    if (e.key === "Escape") {
-                        setReaderSettingOpen(false);
-                        if (readerRef.current) readerRef.current.focus();
+            const f = (e: KeyboardEvent) => {
+                if (isReaderSettingsOpen && e.key === "Escape") {
+                    setReaderSettingOpen(false);
+                    if (readerRef.current) readerRef.current.focus();
+                    return;
+                }
+                const keyStr = keyFormatter(e);
+                if (keyStr && shortcutsMapped.savePreset?.includes(keyStr)) {
+                    e.preventDefault();
+                    const id = appSettings.mangaReaderPresetId;
+                    if (id) {
+                        dispatch(updateMangaPreset({ id, data: appSettings.readerSettings }));
+                        setShortcutText(`Saved to preset "${currentPresetName ?? "Unknown"}"`);
                     }
-                };
-                window.addEventListener("keydown", f);
-                return () => {
-                    window.removeEventListener("keydown", f);
-                };
-            }
-        }, [isReaderSettingsOpen]);
+                }
+            };
+            window.addEventListener("keydown", f);
+            return () => window.removeEventListener("keydown", f);
+        }, [
+            isReaderSettingsOpen,
+            shortcutsMapped,
+            appSettings.mangaReaderPresetId,
+            appSettings.readerSettings,
+            currentPresetName,
+            dispatch,
+            setShortcutText,
+            readerRef,
+        ]);
         useEffect(() => {
             setMaxWidth(appSettings.readerSettings.widthClamped ? 100 : 500);
             if (appSettings.readerSettings.widthClamped) {
@@ -89,6 +113,7 @@ const ReaderSettings = memo(
                     <FontAwesomeIcon icon={isReaderSettingsOpen ? faTimes : faBars} />
                 </button>
                 <div className="main">
+                    <ReaderPresetSection type="manga" />
                     <div className={"settingItem "}>
                         <div
                             className={`name ${!appSettings.readerSettings.settingsCollapsed.size ? "expanded " : ""}`}
@@ -239,10 +264,9 @@ const ReaderSettings = memo(
                                     <FontAwesomeIcon icon={faArrowsAltH} />
                                 </button>
                                 <button
-                                    className={
-                                        (appSettings.readerSettings.fitOption === 3 ? "optionSelected " : " ") +
-                                        "icon"
-                                    }
+                                    className={`${
+                                        appSettings.readerSettings.fitOption === 3 ? "optionSelected " : " "
+                                    }icon`}
                                     onClick={() => {
                                         dispatch(
                                             setReaderSettings({
@@ -834,7 +858,9 @@ const ReaderSettings = memo(
                                 checked={appSettings.readerSettings.showPageNumberInZenMode}
                                 onChange={(e) => {
                                     dispatch(
-                                        setReaderSettings({ showPageNumberInZenMode: e.currentTarget.checked }),
+                                        setReaderSettings({
+                                            showPageNumberInZenMode: e.currentTarget.checked,
+                                        }),
                                     );
                                 }}
                                 paraAfter="Show Page Number in Zen Mode"

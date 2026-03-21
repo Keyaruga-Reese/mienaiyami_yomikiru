@@ -348,4 +348,11 @@ input[type="color"] {
         overflow: hidden;
         padding: 20px;
     }
+    
+    .modal-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        justify-content: flex-end;
+    }
 }
