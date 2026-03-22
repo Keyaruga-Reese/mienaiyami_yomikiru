@@ -55,3 +55,26 @@ NEWNAME=$(basename "$MAIN_PKG" | sed 's/-[0-9]\+-x86_64/-x86_64/')
 mv "$MAIN_PKG" "../out/all/${NEWNAME}"
 
 echo "Build complete: out/all/${NEWNAME}"
+
+echo "Generating build metadata JSON..."
+
+ARTIFACT_DIR="../build-artifacts"
+mkdir -p "$ARTIFACT_DIR"
+
+OS="linux"
+ARCH="x64"
+TIMESTAMP=$(date +%s%3N)
+
+JSON_FILE="${ARTIFACT_DIR}/${OS}-${ARCH}-${TIMESTAMP}.json"
+
+cat > "$JSON_FILE" <<EOF
+[{
+  "platform": "${OS}",
+  "arch": "${ARCH}",
+  "artifacts": [
+      "out/all/${NEWNAME}"
+  ]
+}]
+EOF
+
+echo "Metadata written to ${JSON_FILE}"

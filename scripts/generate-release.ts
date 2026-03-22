@@ -107,7 +107,7 @@ const getArtifactType = (ext: string): string => {
           ? "portable"
           : ext === "deb"
             ? "package"
-            : ext === "pkg.tar.xz"
+            : ext === "zst"
               ? "package"
               : ext;
 };
@@ -208,7 +208,7 @@ const generateRelease = () => {
                     if (!(artifactKey in artifactMap)) {
                         artifactKey = `linux+deb+x64` as ArtifactKey;
                     }
-                } else if (filename.endsWith(".pkg.tar.xz")) {
+                } else if (filename.endsWith(".pkg.tar.zst")) {
                     artifactKey = "linux+pkg.tar.zst+x64" as ArtifactKey;
                 }
             } else if (res.platform === "darwin") {
@@ -251,7 +251,7 @@ const generateRelease = () => {
             const sha256 = calculateSHA256(finalPath);
             const size = getFileSize(finalPath);
             const [platform] = artifactKey.split("+");
-            const type = getArtifactType(ext === "pkg.tar.zst" ? "pkg.tar.zst" : ext);
+            const type = getArtifactType(ext);
 
             // Determine final arch for metadata
             let finalArch = res.arch;
