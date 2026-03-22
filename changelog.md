@@ -14,7 +14,7 @@
 > 2. Install it over your existing installation
 >
 > Issue is only present to users using "Setup" version.
-> For more information, see #451
+> For more information, see [Announcement #451](https://github.com/mienaiyami/yomikiru/discussions/451)
 
 # 2.23.2-beta
 
@@ -26,7 +26,7 @@
 - feat: support mouse buttons 4 and 5 in key bindings (#393). Default bindings: mouse 4 for previous page, mouse 5 for next page.
 - feat: add optional single-instance behavior via Use Existing Window (#490). When enabled, second launch focuses the existing window and opens files in it; when disabled, opens in a new window. Toggle in General Settings (all platforms).
 - feat(settings): add Detailed Info dialog to About. Shows build commit, build date, build type, and OS release.
-- fix: correct CSS URL handling and body/html selector scoping in book (EPUB) reader (#488). Fixes url() in @font-face and proper mapping of body/html selectors to the content container.
+- fix: correct CSS URL handling and body/html selector scoping in book (EPUB) reader (#488). Fixes url() in `@font-face` and proper mapping of body/html selectors to the content container.
 - fix: arch linux build entry in release markdown.
 
 ### 2.23.2-beta (earlier builds)
