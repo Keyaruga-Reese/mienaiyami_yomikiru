@@ -5,6 +5,7 @@ import { app, BrowserWindow, dialog, shell } from "electron";
 import { getWindowFromWebContents, log } from ".";
 import { handleError } from "./errorHandler";
 import { MainSettings } from "./mainSettings";
+import { TrayManager } from "./tray";
 
 declare const HOME_WEBPACK_ENTRY: string;
 declare const HOME_PRELOAD_WEBPACK_ENTRY: string;
@@ -93,6 +94,7 @@ export class WindowManager {
         remote.enable(window.webContents);
 
         window.webContents.once("dom-ready", () => {
+            TrayManager.setupWindowListeners(window);
             // maximize also unhide window
             window.maximize();
             if (WindowManager.isFirstWindow) {
@@ -166,6 +168,7 @@ export class WindowManager {
         const onClosed = () => {
             WindowManager.windows[currentWindowIndex] = null;
             WindowManager.deleteDirsOnClose[currentWindowIndex] = null;
+            TrayManager.refreshMenu();
             if (WindowManager.windows.every((w) => !w)) app.quit();
         };
 

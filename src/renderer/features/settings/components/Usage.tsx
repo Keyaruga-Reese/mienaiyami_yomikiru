@@ -229,6 +229,13 @@ const Usage: React.FC = () => {
                     </ul>
                 </li>
                 <li>
+                    <b>Minimize to Tray:</b> Enable in{" "}
+                    <a onClick={() => scrollIntoView("#settings-otherSettings", "settings")}>Other Settings</a> to
+                    send the window to the system tray instead of the taskbar when minimizing. Left-click tray icon
+                    to restore; right-click for Restore and Exit. Exit respects &quot;Confirm Close Window&quot;
+                    when enabled.
+                </li>
+                <li>
                     <a
                         id="settings-usage-copyTheme"
                         onClick={() => {

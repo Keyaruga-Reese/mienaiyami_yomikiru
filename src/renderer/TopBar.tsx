@@ -178,7 +178,7 @@ const TopBar = (): ReactElement => {
                                     let pagenumber = parseInt(e.currentTarget.value);
                                     if (pagenumber > (readerContent.progress?.totalPages || 0))
                                         pagenumber = readerContent.progress?.totalPages || 0;
-                                    if (pageNumberInputRef.current && pageNumberInputRef.current) {
+                                    if (pageNumberInputRef.current) {
                                         pageNumberInputRef.current.value = pagenumber.toString();
                                     }
                                     if (!pagenumber) return;
@@ -192,7 +192,7 @@ const TopBar = (): ReactElement => {
                                     let pagenumber = parseInt(e.currentTarget.value);
                                     if (pagenumber > (readerContent.progress?.totalPages || 0))
                                         pagenumber = readerContent.progress?.totalPages || 0;
-                                    if (pageNumberInputRef.current && pageNumberInputRef.current) {
+                                    if (pageNumberInputRef.current) {
                                         pageNumberInputRef.current.value = pagenumber.toString();
                                     }
                                     if (!pagenumber) return;
@@ -242,7 +242,7 @@ const TopBar = (): ReactElement => {
                                 if (/[0-9]/gi.test(e.key) || e.key === "Backspace") {
                                     let percent = parseInt(e.currentTarget.value);
                                     if (percent > 100) percent = 100;
-                                    if (bookProgressRef.current && bookProgressRef.current) {
+                                    if (bookProgressRef.current) {
                                         bookProgressRef.current.value = percent.toString();
                                     }
                                     // if (!percent) return;

@@ -4,6 +4,7 @@ import { ipc } from "@electron/ipc/utils";
 import { app } from "electron";
 import { z } from "zod";
 import { log } from ".";
+import { TrayManager } from "./tray";
 import { WindowManager } from "./window";
 
 const mainSettingsSchema = z
@@ -13,6 +14,8 @@ const mainSettingsSchema = z
         /** Open files in current window and focus it when launching the app again. Disabled: open in new window. */
         openInExistingWindow: z.boolean().default(false),
         askBeforeClosing: z.boolean().default(false),
+        /** When enabled, minimize sends window to system tray instead of taskbar. */
+        minimizeToTray: z.boolean().default(false),
 
         //app updates
         checkForUpdates: z.boolean().default(true),
@@ -119,7 +122,7 @@ export class MainSettings {
             windows.forEach((window) => {
                 ipc.send(window.webContents, "mainSettings:sync", MainSettings.settings);
             });
-            // return this.getSettings();
+            TrayManager.setMinimizeToTray(MainSettings.settings.minimizeToTray);
         });
     }
 }

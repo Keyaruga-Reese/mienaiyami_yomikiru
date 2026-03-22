@@ -18,6 +18,7 @@ import { registerUpdateHandlers } from "./ipc/update";
 import handleSquirrelEvent from "./util/handleSquirrelEvent";
 import { MainSettings } from "./util/mainSettings";
 import { checkForJSONMigration } from "./util/migrate";
+import { TrayManager } from "./util/tray";
 import { WindowManager } from "./util/window";
 
 if (handleSquirrelEvent()) {
@@ -137,6 +138,7 @@ app.on("ready", async () => {
         registerErrorReportingHandlers();
 
         WindowManager.createWindow(openFolderOnLaunch);
+        TrayManager.initialize();
         // need to be after window is created
         registerUpdateHandlers();
     } catch (error) {

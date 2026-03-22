@@ -92,7 +92,7 @@ const GeneralSettings: React.FC = () => {
                 </div>
             </div>
             <CustomTempLocation />
-            <div className="settingItem2 otherSettings">
+            <div className="settingItem2 otherSettings" id="settings-otherSettings">
                 <h3>Other Settings</h3>
                 <div className="toggleItem">
                     <InputCheckbox
@@ -118,6 +118,20 @@ const GeneralSettings: React.FC = () => {
                         labelAfter="Confirm Close Window"
                     />
                     <div className="desc">Ask for confirmation before closing a window.</div>
+                </div>
+                <div className="toggleItem">
+                    <InputCheckbox
+                        checked={mainSettings.minimizeToTray}
+                        className="noBG"
+                        onChange={async (e) => {
+                            dispatch(updateMainSettings({ minimizeToTray: e.currentTarget.checked }));
+                        }}
+                        labelAfter="Minimize to Tray"
+                    />
+                    <div className="desc">
+                        When enabled, minimize sends the window to the system tray instead of the taskbar.
+                        Left-click tray icon to restore; right-click for context menu (Restore, Exit).
+                    </div>
                 </div>
                 <div className="toggleItem">
                     <InputCheckbox

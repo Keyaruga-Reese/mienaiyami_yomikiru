@@ -1,5 +1,3 @@
-import { faCompress, faExpand } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { addAnilistTracker } from "@store/anilist";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { getReaderContent } from "@store/reader";

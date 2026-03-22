@@ -22,7 +22,7 @@ const config: ForgeConfig = {
         name: appName,
         asar: true,
         // needed for migrating better-sqlite3
-        extraResource: ["./drizzle"],
+        extraResource: ["./drizzle", "./public/app.ico"],
         executableName: process.platform === "win32" ? appName : appName.toLowerCase(),
     },
     plugins: [
