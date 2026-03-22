@@ -86,6 +86,8 @@ const Reader: React.FC = () => {
     const sizeMinusRef = useRef<HTMLButtonElement>(null);
     const openPrevChapterRef = useRef<HTMLButtonElement>(null);
     const openNextChapterRef = useRef<HTMLButtonElement>(null);
+    const openRandomChapterRef = useRef<HTMLButtonElement>(null);
+    const sideListSearchRef = useRef<HTMLInputElement>(null);
     const openPrevPageRef = useRef<HTMLButtonElement>(null);
     const openNextPageRef = useRef<HTMLButtonElement>(null);
     const navToPageButtonRef = useRef<HTMLButtonElement>(null);
@@ -341,6 +343,12 @@ const Reader: React.FC = () => {
                     return true;
                 case is(shortcutsMapped.prevChapter):
                     openPrevChapterRef.current?.click();
+                    return true;
+                case is(shortcutsMapped.focusSideListSearch):
+                    sideListSearchRef.current?.focus();
+                    return true;
+                case is(shortcutsMapped.randomChapter):
+                    openRandomChapterRef.current?.click();
                     return true;
                 case is(shortcutsMapped.bookmark):
                     addToBookmarkRef.current?.click();
@@ -1104,6 +1112,8 @@ const Reader: React.FC = () => {
             <ReaderSideList
                 openNextChapterRef={openNextChapterRef}
                 openPrevChapterRef={openPrevChapterRef}
+                openRandomChapterRef={openRandomChapterRef}
+                sideListSearchRef={sideListSearchRef}
                 addToBookmarkRef={addToBookmarkRef}
                 setShortcutText={setShortcutText}
                 isSideListPinned={isSideListPinned}

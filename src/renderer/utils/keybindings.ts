@@ -50,6 +50,16 @@ export const SHORTCUT_COMMAND_MAP = [
         defaultKeys: ["bracketleft"],
     },
     {
+        command: "focusSideListSearch" as const,
+        name: "Focus sidelist search (Manga Reader)",
+        defaultKeys: ["ctrl+shift+f"],
+    },
+    {
+        command: "randomChapter" as const,
+        name: "Open random chapter (Manga Reader)",
+        defaultKeys: ["r"],
+    },
+    {
         command: "bookmark" as const,
         name: "Bookmark",
         defaultKeys: ["b"],

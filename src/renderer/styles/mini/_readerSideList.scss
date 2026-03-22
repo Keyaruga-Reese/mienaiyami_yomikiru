@@ -213,6 +213,19 @@
                 }
             }
         }
+        .shuffle-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            &.selected {
+                background: var(--btn-color-focus);
+            }
+            .shuffle-label {
+                font-size: 0.65em;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+        }
         .btnOptions {
             display: flex;
             flex-direction: row;

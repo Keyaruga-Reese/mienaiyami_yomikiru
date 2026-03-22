@@ -43,6 +43,8 @@ export type ListNavigatorProps<T> = {
     handleExtraKeyDown?: (keyStr: string, shortcutsMapped: Record<ShortcutCommands, string[]>) => void;
     onSelect?: (element: HTMLElement) => void;
     emptyMessage?: string;
+    /** When provided, assigned to the search input for external focus etc. */
+    inputRef?: React.RefObject<HTMLInputElement>;
     children: React.ReactNode;
 };
 
@@ -54,12 +56,14 @@ function ListNavigatorProviderComponent<T>({
     handleExtraKeyDown,
     onSelect,
     emptyMessage = "No items",
+    inputRef: inputRefProp,
     children,
 }: ListNavigatorProps<T>) {
     const shortcutsMapped = useAppSelector(getShortcutsMapped, shallowEqual);
     const [filter, setFilter] = useState<string>("");
     const [focused, setFocused] = useState(-1);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const internalInputRef = useRef<HTMLInputElement>(null);
+    const inputRef = inputRefProp ?? internalInputRef;
     const listRef = useRef<HTMLOListElement>(null);
 
     const filteredItems = useMemo(() => {
