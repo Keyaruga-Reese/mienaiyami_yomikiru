@@ -21,6 +21,7 @@ import InputRange from "@ui/InputRange";
 import InputSelect from "@ui/InputSelect";
 import { colorUtils } from "@utils/color";
 import { keyFormatter } from "@utils/keybindings";
+import { defaultMangaReaderSettings } from "@utils/readerSettingsSchema";
 import { memo, useEffect, useState } from "react";
 
 const ReaderSettings = memo(
@@ -787,6 +788,21 @@ const ReaderSettings = memo(
                                     },
                                 ]}
                             />
+                            <button
+                                onClick={() => {
+                                    dispatch(
+                                        setReaderSettings({
+                                            customColorFilter: {
+                                                ...defaultMangaReaderSettings.customColorFilter,
+                                            },
+                                            invertImage: defaultMangaReaderSettings.invertImage,
+                                            grayscale: defaultMangaReaderSettings.grayscale,
+                                        }),
+                                    );
+                                }}
+                            >
+                                Reset
+                            </button>
                             <InputCheckbox
                                 checked={appSettings.readerSettings.invertImage}
                                 onChange={(e) => {
