@@ -68,8 +68,8 @@ const createArtifactMap = (appNameParam: string, appVersionParam: string) => ({
         text: "64-bit Linux (Debian)",
         icon: "debian&logoColor=red",
     },
-    "linux+pkg.tar.xz+x64": {
-        name: `${appNameParam.toLowerCase()}-${appVersionParam.replace(/-/g, "_")}-x86_64.pkg.tar.xz`,
+    "linux+pkg.tar.zst+x64": {
+        name: `${appNameParam.toLowerCase()}-${appVersionParam.replace(/-/g, "_")}-x86_64.pkg.tar.zst`,
         text: "64-bit Linux (Arch)",
         icon: "archlinux&logoColor=blue",
     },
@@ -209,7 +209,7 @@ const generateRelease = () => {
                         artifactKey = `linux+deb+x64` as ArtifactKey;
                     }
                 } else if (filename.endsWith(".pkg.tar.xz")) {
-                    artifactKey = "linux+pkg.tar.xz+x64" as ArtifactKey;
+                    artifactKey = "linux+pkg.tar.zst+x64" as ArtifactKey;
                 }
             } else if (res.platform === "darwin") {
                 const normalizedArch = normalizeArchForLinux(res.arch);
@@ -251,11 +251,11 @@ const generateRelease = () => {
             const sha256 = calculateSHA256(finalPath);
             const size = getFileSize(finalPath);
             const [platform] = artifactKey.split("+");
-            const type = getArtifactType(ext === "pkg.tar.xz" ? "pkg.tar.xz" : ext);
+            const type = getArtifactType(ext === "pkg.tar.zst" ? "pkg.tar.zst" : ext);
 
             // Determine final arch for metadata
             let finalArch = res.arch;
-            if (artifactKey === "linux+pkg.tar.xz+x64") {
+            if (artifactKey === "linux+pkg.tar.zst+x64") {
                 finalArch = "x86_64";
             } else if (res.platform === "win32") {
                 // Windows arch stays as-is (ia32 or x64)

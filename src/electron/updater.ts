@@ -519,7 +519,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
         };
 
         if (isArchLinux()) {
-            const dl = `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-x86_64.pkg.tar.xz`;
+            const dl = `${DOWNLOAD_LINK}/v${latestVersion}/yomikiru-${latestVersion.replace(/-/g, "_")}-x86_64.pkg.tar.zst`;
             downloadFile(dl, webContents, (file) => {
                 logger.log(`${file.filename} downloaded.`);
                 installArch(file.path);
