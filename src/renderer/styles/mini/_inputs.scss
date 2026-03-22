@@ -368,7 +368,8 @@ input[type="color"] {
             resize: none;
             font-family: monospace;
             font-size: 1.1em;
-            min-width: 400px;
+            white-space: pre;
+            min-width: 500px;
             min-height: 300px;
             padding: 8px;
         }

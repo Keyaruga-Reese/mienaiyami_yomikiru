@@ -12,6 +12,8 @@ type FunctionLess<T> = {
     [K in keyof T as T[K] extends () => any ? never : K]: T[K];
 };
 
+declare const __BUILD_INFO__: { commit: string; date: string; branch: string };
+
 // ! when sending data to renderer process from preload, any function/prototype get removed from the object
 
 // todo: replace with ipc later
@@ -153,7 +155,7 @@ const electronAPI = {
     },
 };
 
-const buildBranch = typeof process.env.BUILD_BRANCH === "string" ? process.env.BUILD_BRANCH : "";
+const buildBranch = __BUILD_INFO__.branch;
 const buildType =
     buildBranch === "master" || buildBranch === "main"
         ? "Stable"
@@ -170,8 +172,8 @@ const processObj = {
         app.isPackaged &&
         process.platform === "win32" &&
         !app.getAppPath().includes(path.dirname(app.getPath("appData"))),
-    buildCommit: typeof process.env.BUILD_COMMIT === "string" ? process.env.BUILD_COMMIT : "unknown",
-    buildDate: typeof process.env.BUILD_DATE === "string" ? process.env.BUILD_DATE : "unknown",
+    buildCommit: __BUILD_INFO__.commit,
+    buildDate: __BUILD_INFO__.date,
     buildType,
 };
 

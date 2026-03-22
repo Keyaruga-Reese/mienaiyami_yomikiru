@@ -22,9 +22,11 @@ export const preloadConfig: Configuration = {
     plugins: [
         ...plugins,
         new webpack.DefinePlugin({
-            "process.env.BUILD_COMMIT": JSON.stringify(process.env.BUILD_COMMIT || "unknown"),
-            "process.env.BUILD_DATE": JSON.stringify(process.env.BUILD_DATE || "unknown"),
-            "process.env.BUILD_BRANCH": JSON.stringify(process.env.BUILD_BRANCH || ""),
+            __BUILD_INFO__: JSON.stringify({
+                commit: process.env.BUILD_COMMIT || "unknown",
+                date: process.env.BUILD_DATE || "unknown",
+                branch: process.env.BUILD_BRANCH || "",
+            }),
         }),
     ],
 };
