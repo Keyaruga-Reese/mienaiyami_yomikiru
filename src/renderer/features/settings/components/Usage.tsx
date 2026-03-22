@@ -352,6 +352,18 @@ const Usage: React.FC = () => {
                         </li>
                     </ul>
                 </li>
+                <li>
+                    In{" "}
+                    <a
+                        onClick={() => {
+                            scrollIntoView("#settings-about", "about");
+                        }}
+                    >
+                        <b>About</b>
+                    </a>
+                    , use <b>Detailed Info</b> to view version, commit, build date, Electron/Node versions, and OS
+                    details. Use <b>Copy</b> to paste this info when reporting issues.
+                </li>
                 <li id="settings-usage-customStylesheet">
                     If you know how to write <code>.css</code>, you can customize style of app, more than just
                     theme color that is enabled by &quot;Theme Maker&quot;, by making your custom <code>.css</code>

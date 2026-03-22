@@ -1,4 +1,5 @@
 import type { Configuration } from "webpack";
+import webpack from "webpack";
 
 // import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 
@@ -18,5 +19,12 @@ export const preloadConfig: Configuration = {
     },
     target: "electron-main",
     // node: { __dirname: false },
-    plugins,
+    plugins: [
+        ...plugins,
+        new webpack.DefinePlugin({
+            "process.env.BUILD_COMMIT": JSON.stringify(process.env.BUILD_COMMIT || "unknown"),
+            "process.env.BUILD_DATE": JSON.stringify(process.env.BUILD_DATE || "unknown"),
+            "process.env.BUILD_BRANCH": JSON.stringify(process.env.BUILD_BRANCH || ""),
+        }),
+    ],
 };

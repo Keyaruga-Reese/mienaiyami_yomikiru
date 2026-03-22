@@ -17,6 +17,8 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       commit-sha: ${{ steps.get-version.outputs.commit-sha }}
+      build-date: ${{ steps.build-info.outputs.build-date }}
+      build-branch: ${{ steps.build-info.outputs.build-branch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +46,13 @@ jobs:
             exit 1
           fi
           echo "Commit is on branch(es): $BRANCHES"
+
+      - name: Set build info
+        id: build-info
+        run: |
+          BRANCH=$(git branch -r --contains ${{ steps.get-version.outputs.commit-sha }} | grep -oE 'origin/(master|beta)' | head -1 | sed 's|origin/||' || echo "unknown")
+          echo "build-date=$(date -Iseconds)" >> $GITHUB_OUTPUT
+          echo "build-branch=$BRANCH" >> $GITHUB_OUTPUT
 
       - name: Wait for CI to pass
         if: ${{ !contains(steps.get-version.outputs.version, 'test') }}
@@ -121,6 +130,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Set build info
+        run: |
+          echo "BUILD_COMMIT=${{ needs.check-ci-status.outputs.commit-sha }}" >> $GITHUB_ENV
+          echo "BUILD_VERSION=${{ needs.check-ci-status.outputs.version }}" >> $GITHUB_ENV
+          echo "BUILD_DATE=${{ needs.check-ci-status.outputs.build-date }}" >> $GITHUB_ENV
+          echo "BUILD_BRANCH=${{ needs.check-ci-status.outputs.build-branch }}" >> $GITHUB_ENV
+
       - name: forge make
         run: pnpm make:deb
 
@@ -185,6 +201,13 @@ jobs:
             mkdir -p ./build-artifacts
             cp -r ./linux-artifacts/build-artifacts/* ./build-artifacts/ || true
           fi
+
+      - name: Set build info
+        run: |
+          echo "BUILD_COMMIT=${{ needs.check-ci-status.outputs.commit-sha }}" >> $GITHUB_ENV
+          echo "BUILD_VERSION=${{ needs.check-ci-status.outputs.version }}" >> $GITHUB_ENV
+          echo "BUILD_DATE=${{ needs.check-ci-status.outputs.build-date }}" >> $GITHUB_ENV
+          echo "BUILD_BRANCH=${{ needs.check-ci-status.outputs.build-branch }}" >> $GITHUB_ENV
 
       - name: Build for windows
         run: |

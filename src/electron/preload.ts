@@ -1,5 +1,6 @@
 import { accessSync, existsSync, lstatSync, readFileSync } from "node:fs";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import type { IPCChannels } from "@common/types/ipc";
 import { app, clipboard, getCurrentWindow, nativeImage } from "@electron/remote";
@@ -152,14 +153,26 @@ const electronAPI = {
     },
 };
 
+const buildBranch = typeof process.env.BUILD_BRANCH === "string" ? process.env.BUILD_BRANCH : "";
+const buildType =
+    buildBranch === "master" || buildBranch === "main"
+        ? "Stable"
+        : buildBranch === "beta"
+          ? "Beta"
+          : buildBranch || "development";
+
 const processObj = {
     versions: process.versions,
     platform: process.platform,
     arch: process.arch,
+    osRelease: os.release(),
     isPortable:
         app.isPackaged &&
         process.platform === "win32" &&
         !app.getAppPath().includes(path.dirname(app.getPath("appData"))),
+    buildCommit: typeof process.env.BUILD_COMMIT === "string" ? process.env.BUILD_COMMIT : "unknown",
+    buildDate: typeof process.env.BUILD_DATE === "string" ? process.env.BUILD_DATE : "unknown",
+    buildType,
 };
 
 const chokidarAPI = {

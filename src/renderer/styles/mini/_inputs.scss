@@ -200,7 +200,8 @@ input[type="range"] {
     }
 }
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+textarea {
     background: var(--text-input-bg);
     overflow: scroll;
     cursor: text;
@@ -360,5 +361,16 @@ input[type="color"] {
         margin: 0;
         font-size: 0.9em;
         color: var(--error-color);
+    }
+
+    &.text-display-modal {
+        .text-display-modal-textarea {
+            resize: none;
+            font-family: monospace;
+            font-size: 1.1em;
+            min-width: 400px;
+            min-height: 300px;
+            padding: 8px;
+        }
     }
 }

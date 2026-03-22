@@ -1,4 +1,5 @@
 import type { AppUpdateChannel } from "@common/types/ipc";
+import DetailedInfoModal from "@features/settings/components/DetailedInfoModal";
 import { faDiscord, faGithub } from "@fortawesome/free-brands-svg-icons";
 import { faHeart } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -6,8 +7,11 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { updateMainSettings } from "@store/mainSettings";
 import InputCheckbox from "@ui/InputCheckbox";
 import InputSelect from "@ui/InputSelect";
+import { useEffect, useState } from "react";
 
 const About: React.FC = () => {
+    const [showDetailedInfo, setShowDetailedInfo] = useState(false);
+    const isSettingOpen = useAppSelector((state) => state.ui.isOpen.settings);
     const mainSettings = useAppSelector((state) => state.mainSettings);
     const dispatch = useAppDispatch();
 
@@ -29,8 +33,12 @@ const About: React.FC = () => {
         dispatch(updateMainSettings({ channel: newChannel }));
     };
 
+    useEffect(() => {
+        if (!isSettingOpen) setShowDetailedInfo(false);
+    }, [isSettingOpen]);
+
     return (
-        <div className="content2">
+        <div className="content2" id="settings-about">
             <div className="settingItem2">
                 <h3>Version</h3>
                 <div
@@ -93,6 +101,7 @@ const About: React.FC = () => {
                     >
                         Check for Update Now
                     </button>
+                    <button onClick={() => setShowDetailedInfo(true)}>Detailed Info</button>
                     <button
                         onClick={() =>
                             window.electron.openExternal("https://github.com/mienaiyami/yomikiru/releases")
@@ -111,6 +120,7 @@ const About: React.FC = () => {
                         labelBefore="Update Channel"
                     />
                 </div>
+                <DetailedInfoModal open={showDetailedInfo} onClose={() => setShowDetailedInfo(false)} />
             </div>
             <div className="settingItem2">
                 <h3>Others</h3>
