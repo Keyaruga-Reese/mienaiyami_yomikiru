@@ -18,11 +18,65 @@ const argReleasePage = process.argv.find((e) => e.startsWith("--release-page="))
 
 const REPO = "mienaiyami/yomikiru";
 
-const ANNOUNCEMENTS_URL = `https://raw.githubusercontent.com/${REPO}/master/announcements.txt`;
-const ANNOUNCEMENTS_DISCUSSION_URL = `https://github.com/${REPO}/discussions/categories/announcements`;
-const RELEASES_URL = argReleaseUrl || `https://api.github.com/repos/${REPO}/releases`;
-const RELEASES_PAGE = argReleasePage || `https://github.com/${REPO}/releases`;
-const DOWNLOAD_LINK = `${RELEASES_PAGE}/download`;
+const ANNOUNCEMENTS_URL = `https://raw.githubusercontent.com/${REPO}/master/announcements.txt` as const;
+const ANNOUNCEMENTS_DISCUSSION_URL = `https://github.com/${REPO}/discussions/categories/announcements` as const;
+const RELEASES_URL = argReleaseUrl || (`https://api.github.com/repos/${REPO}/releases` as const);
+const RELEASES_PAGE = argReleasePage || (`https://github.com/${REPO}/releases` as const);
+const DOWNLOAD_LINK = `${RELEASES_PAGE}/download` as const;
+
+type ArtifactMetadata = {
+    name: string;
+    platform: string;
+    arch: string;
+    type: string;
+};
+
+/**
+ * Fetches artifacts.json from the release and returns the download URL for the current platform/arch.
+ * @param version release tag (e.g. "v2.3.8")
+ * @returns download URL or null if no matching artifact
+ */
+const getArtifactDownloadUrl = async (version: string): Promise<string | null> => {
+    try {
+        const url = version.startsWith("v") ? version : `v${version}`;
+        const artifactsUrl = `${DOWNLOAD_LINK}/${url}/artifacts.json`;
+        const res = await fetch(artifactsUrl);
+        if (!res.ok) {
+            logger.warn("Failed to fetch artifacts.json:", res.status, res.statusText);
+            return null;
+        }
+        const artifacts = (await res.json()) as ArtifactMetadata[];
+        if (!Array.isArray(artifacts) || artifacts.length === 0) {
+            logger.warn("artifacts.json empty or invalid");
+            return null;
+        }
+        const platform = process.platform as string;
+        const arch = process.arch === "ia32" ? "ia32" : process.arch === "x64" ? "x64" : process.arch;
+        const wantPortable = platform === "win32" && IS_PORTABLE;
+        const wantType = wantPortable ? "portable" : platform === "win32" ? "installer" : "package";
+
+        let match: ArtifactMetadata | null = null;
+        if (platform === "win32") {
+            match =
+                artifacts.find((a) => a.platform === "win32" && a.type === wantType && a.arch === arch) ?? null;
+        } else if (platform === "linux") {
+            if (isArchLinux()) {
+                match = artifacts.find((a) => a.platform === "linux" && a.name.endsWith(".pkg.tar.zst")) ?? null;
+            } else {
+                match = artifacts.find((a) => a.platform === "linux" && a.name.endsWith(".deb")) ?? null;
+            }
+        }
+
+        if (!match) {
+            logger.warn("No matching artifact in artifacts.json for", { platform, arch, wantType });
+            return null;
+        }
+        return `${DOWNLOAD_LINK}/${url}/${match.name}`;
+    } catch (error) {
+        logger.error("getArtifactDownloadUrl:", error);
+        return null;
+    }
+};
 
 const checkForAnnouncements = async () => {
     try {
@@ -375,36 +429,76 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
     };
 
     const webContents = newWindow instanceof BrowserWindow ? newWindow.webContents : false;
-    if (process.platform === "win32")
-        if (IS_PORTABLE) {
-            const dl =
-                process.arch === "ia32"
-                    ? `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-win32-v${latestVersion}-Portable.zip`
-                    : `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-win32-v${latestVersion}-Portable-x64.zip`;
-            const extractPath = path.join(tempPath, "updates");
-            if (!fs.existsSync(extractPath)) fs.mkdirSync(extractPath);
 
-            downloadFile(dl, webContents, (file) => {
-                logger.log(`${file.filename} downloaded.`);
-                crossZip.unzip(file.path, extractPath, (err) => {
-                    if (err) return logger.error(err);
-                    logger.log(`Successfully extracted at "${extractPath}"`);
-                    const appPath = path.join(app.getAppPath(), "../../");
-                    const appDirName = path.join(app.getPath("exe"), "../");
+    void (async () => {
+        const dl = await getArtifactDownloadUrl(latestVersion);
+        if (!dl) {
+            logger.error("Could not resolve update artifact from artifacts.json");
+            dialog
+                .showMessageBox(window, {
+                    type: "error",
+                    title: "Update Failed",
+                    message:
+                        "Could not find update file for this platform. Please download manually from the releases page.",
+                    buttons: ["Open Releases", "OK"],
+                })
+                .then((res) => {
+                    if (res.response === 0) shell.openExternal(RELEASES_PAGE);
+                });
+            return;
+        }
+
+        if (process.platform === "win32") {
+            if (IS_PORTABLE) {
+                const extractPath = path.join(tempPath, "updates");
+                if (!fs.existsSync(extractPath)) fs.mkdirSync(extractPath);
+
+                downloadFile(dl, webContents, (file) => {
+                    logger.log(`${file.filename} downloaded.`);
+                    crossZip.unzip(file.path, extractPath, (err) => {
+                        if (err) return logger.error(err);
+                        logger.log(`Successfully extracted at "${extractPath}"`);
+                        const appPath = path.join(app.getAppPath(), "../../");
+                        const appDirName = path.join(app.getPath("exe"), "../");
+                        setupInstallOnQuit = () => {
+                            app.once("quit", () => {
+                                logger.log("Installing updates...");
+                                logger.log(`Moving files to "${appPath}"`);
+                                spawn(
+                                    `cmd.exe /c start powershell.exe " Write-Output 'Starting update...' ; Start-Sleep -Seconds 5.0 ;` +
+                                        ` $sourcePath = Join-Path '${extractPath}' '*' ; ` +
+                                        ` $destPath = '${appDirName}' ; ` +
+                                        ` Get-ChildItem -Path $destPath -Recurse -Force | Where-Object { $_.FullName -notmatch 'userdata'} | Remove-Item -Force -Recurse ; ` +
+                                        ` Write-Output 'Moving extracted files...' ; Start-Sleep -Seconds 1.9 ; ` +
+                                        ` Copy-Item -Path $sourcePath -Destination $destPath -Force -Recurse ; ` +
+                                        ` Write-Output 'Updated, launching app.' ; Start-Sleep -Seconds 2.0 ; ` +
+                                        ` & '${app.getPath("exe")}' ; "`,
+                                    { shell: true, cwd: appDirName },
+                                ).on("exit", process.exit);
+                                logger.log("Quitting app...");
+                            });
+                            logger.log("Will install updates on quit.");
+                        };
+                        performInstallNow = () => {
+                            setupInstallOnQuit?.();
+                            logger.log("Preparing to install updates now...");
+                            app.quit();
+                        };
+                        logger.log("Updates ready. Waiting for user choice.");
+                        promptInstall();
+                    });
+                });
+            } else {
+                downloadFile(dl, webContents, (file) => {
+                    logger.log(`${file.filename} downloaded.`);
                     setupInstallOnQuit = () => {
                         app.once("quit", () => {
                             logger.log("Installing updates...");
-                            logger.log(`Moving files to "${appPath}"`);
                             spawn(
-                                `cmd.exe /c start powershell.exe " Write-Output 'Starting update...' ; Start-Sleep -Seconds 5.0 ;` +
-                                    ` $sourcePath = Join-Path '${extractPath}' '*' ; ` +
-                                    ` $destPath = '${appDirName}' ; ` +
-                                    ` Get-ChildItem -Path $destPath -Recurse -Force | Where-Object { $_.FullName -notmatch 'userdata'} | Remove-Item -Force -Recurse ; ` +
-                                    ` Write-Output 'Moving extracted files...' ; Start-Sleep -Seconds 1.9 ; ` +
-                                    ` Copy-Item -Path $sourcePath -Destination $destPath -Force -Recurse ; ` +
-                                    ` Write-Output 'Updated, launching app.' ; Start-Sleep -Seconds 2.0 ; ` +
-                                    ` & '${app.getPath("exe")}' ; "`,
-                                { shell: true, cwd: appDirName },
+                                `cmd.exe /c start powershell.exe "Write-Output 'Starting update...' ; Start-Sleep -Seconds 5.0 ; Start-Process '${file.path}'"`,
+                                {
+                                    shell: true,
+                                },
                             ).on("exit", process.exit);
                             logger.log("Quitting app...");
                         });
@@ -418,120 +512,89 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                     logger.log("Updates ready. Waiting for user choice.");
                     promptInstall();
                 });
-            });
-        } else {
-            const dl =
-                process.arch === "ia32"
-                    ? `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-Setup.exe`
-                    : `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-Setup-x64.exe`;
-            downloadFile(dl, webContents, (file) => {
-                logger.log(`${file.filename} downloaded.`);
-                setupInstallOnQuit = () => {
-                    app.once("quit", () => {
-                        logger.log("Installing updates...");
-                        spawn(
-                            `cmd.exe /c start powershell.exe "Write-Output 'Starting update...' ; Start-Sleep -Seconds 5.0 ; Start-Process '${file.path}'"`,
-                            {
-                                shell: true,
-                            },
-                        ).on("exit", process.exit);
-                        logger.log("Quitting app...");
-                    });
-                    logger.log("Will install updates on quit.");
-                };
-                performInstallNow = () => {
-                    setupInstallOnQuit?.();
-                    logger.log("Preparing to install updates now...");
-                    app.quit();
-                };
-                logger.log("Updates ready. Waiting for user choice.");
-                promptInstall();
-            });
-        }
-    else if (process.platform === "linux") {
-        const installDeb = (filePath: string) => {
-            dialog
-                .showMessageBox(window, {
-                    type: "info",
-                    title: "Updates downloaded",
-                    message: "Updates downloaded.",
-                    buttons: ["Install Now", "Install on Quit"],
-                    cancelId: 1,
-                })
-                .then((res) => {
-                    if (res.response === 0) {
-                        execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                            if (err) throw err;
-                            logger.log("Installing updates...");
-                        });
-                    } else {
-                        app.on("before-quit", () => {
+            }
+        } else if (process.platform === "linux") {
+            const installDeb = (filePath: string) => {
+                dialog
+                    .showMessageBox(window, {
+                        type: "info",
+                        title: "Updates downloaded",
+                        message: "Updates downloaded.",
+                        buttons: ["Install Now", "Install on Quit"],
+                        cancelId: 1,
+                    })
+                    .then((res) => {
+                        if (res.response === 0) {
                             execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                                dialog.showMessageBox({
-                                    message: "Installing updates.",
-                                    type: "info",
-                                    title: "Yomikiru",
-                                });
                                 if (err) throw err;
                                 logger.log("Installing updates...");
                             });
-                        });
-                    }
-                });
-        };
+                        } else {
+                            app.on("before-quit", () => {
+                                execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
+                                    dialog.showMessageBox({
+                                        message: "Installing updates.",
+                                        type: "info",
+                                        title: "Yomikiru",
+                                    });
+                                    if (err) throw err;
+                                    logger.log("Installing updates...");
+                                });
+                            });
+                        }
+                    });
+            };
 
-        const installArch = (filePath: string) => {
-            const dir = path.dirname(filePath);
-            dialog
-                .showMessageBox(window, {
-                    type: "info",
-                    title: "Updates downloaded",
-                    message: "Updates downloaded.",
-                    detail: "Install Now uses sudo. Use Install Manually if you prefer to run pacman yourself.",
-                    buttons: ["Install Now", "Install on Quit", "Install Manually (show folder)"],
-                    cancelId: 2,
-                })
-                .then((res) => {
-                    const doInstall = () => {
-                        execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                            if (err) throw err;
-                            logger.log("Installing updates...");
-                        });
-                    };
-                    if (res.response === 0) {
-                        doInstall();
-                    } else if (res.response === 1) {
-                        app.on("before-quit", () => {
+            const installArch = (filePath: string) => {
+                const dir = path.dirname(filePath);
+                dialog
+                    .showMessageBox(window, {
+                        type: "info",
+                        title: "Updates downloaded",
+                        message: "Updates downloaded.",
+                        detail: "Install Now uses sudo. Use Install Manually if you prefer to run pacman yourself.",
+                        buttons: ["Install Now", "Install on Quit", "Install Manually (show folder)"],
+                        cancelId: 2,
+                    })
+                    .then((res) => {
+                        const doInstall = () => {
                             execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                                dialog.showMessageBox({
-                                    message: "Installing updates.",
-                                    type: "info",
-                                    title: "Yomikiru",
-                                });
                                 if (err) throw err;
                                 logger.log("Installing updates...");
                             });
-                        });
-                    } else {
-                        shell.openPath(dir);
-                    }
-                });
-        };
+                        };
+                        if (res.response === 0) {
+                            doInstall();
+                        } else if (res.response === 1) {
+                            app.on("before-quit", () => {
+                                execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
+                                    dialog.showMessageBox({
+                                        message: "Installing updates.",
+                                        type: "info",
+                                        title: "Yomikiru",
+                                    });
+                                    if (err) throw err;
+                                    logger.log("Installing updates...");
+                                });
+                            });
+                        } else {
+                            shell.openPath(dir);
+                        }
+                    });
+            };
 
-        if (isArchLinux()) {
-            const dl = `${DOWNLOAD_LINK}/v${latestVersion}/yomikiru-${latestVersion.replace(/-/g, "_")}-x86_64.pkg.tar.zst`;
-            downloadFile(dl, webContents, (file) => {
-                logger.log(`${file.filename} downloaded.`);
-                installArch(file.path);
-            });
-        } else {
-            const dl = `${DOWNLOAD_LINK}/v${latestVersion}/Yomikiru-v${latestVersion}-amd64.deb`;
-            downloadFile(dl, webContents, (file) => {
-                logger.log(`${file.filename} downloaded.`);
-                installDeb(file.path);
-            });
+            const afterDownload = (file: { filename: string; path: string }) => {
+                logger.log(`Update package downloaded: ${file.filename}`);
+                if (isArchLinux()) {
+                    installArch(file.path);
+                } else {
+                    installDeb(file.path);
+                }
+            };
+
+            downloadFile(dl, webContents, afterDownload);
         }
-    }
+    })();
 };
 
 export default checkForUpdate;
