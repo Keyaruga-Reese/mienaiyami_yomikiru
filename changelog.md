@@ -18,6 +18,17 @@
 
 # 2.23.2-beta
 
+### 2.23.2-beta.8
+
+- feat: add minimize to tray option (#489). When enabled, minimizing hides window to tray. Tray menu lists all windows; left-click restores or focuses, right-click shows window list and Exit.
+- feat: add focus sidelist search keybind (ctrl+shift+f) and random chapter shortcut (r) (#507). Random chapter biases away from recently opened chapters; full shuffle mode (session-only) shuffles list once with prev/next following shuffled order.
+- feat: add sidelist search persistence and prev/next navigation improvements (#507). "Fix search" toggle (session-only) keeps filter across chapter navigation; prev/next follows filtered list when active.
+- feat: add reset button for color filter section in reader settings (#506).
+- feat: add autosave toggle for reader presets. When enabled, changes to reader settings (manga and book) are saved automatically.
+- feat: replace InputCheckboxColor with InputColor for book background layer settings to avoid confusion.
+- fix: detailed about app info not loading.
+- fix: arch linux build and release creation.
+
 ### 2.23.2-beta.6
 
 - feat: add reader settings presets for manga and book (#281). Switch between reading modes (e.g. 2-page LTR manga vs vertical-scroll manhwa). Supports export/import, save from clipboard, keybinds to cycle/select presets (alt+1-5, alt+period/comma), and reorder presets via up/down buttons.
@@ -32,7 +43,7 @@
 ### 2.23.2-beta (earlier builds)
 
 - feat: add arch linux support for auto-updates.
-- fix: chapter list not refreshing after mark read/unread (#486) (#500) by @jaathavan18
+- fix: chapter list not refreshing after mark read/unread (#486) (#500) by `@jaathavan18`
 
 ### 2.23.1
 
