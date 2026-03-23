@@ -1,7 +1,7 @@
 import { setEpubReaderSettings } from "@store/appSettings";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import InputCheckbox from "@ui/InputCheckbox";
-import InputCheckboxColor from "@ui/InputCheckboxColor";
+import InputColor from "@ui/InputColor";
 import InputNumber from "@ui/InputNumber";
 import InputRange from "@ui/InputRange";
 import { colorUtils } from "@utils/color";
@@ -190,58 +190,52 @@ const BackgroundSettings = memo(() => {
                             }}
                             paraAfter="Image layer overlay"
                         />
-                        {appSettings.epubReaderSettings.backgroundImage.layer.enabled && (
-                            <>
-                                <InputCheckboxColor
-                                    checked={true}
-                                    onChangeCheck={(e) => e.preventDefault()}
-                                    value={colorUtils.new(
-                                        appSettings.epubReaderSettings.backgroundImage.layer.color,
-                                    )}
-                                    timeout={[
-                                        500,
-                                        (value) =>
-                                            dispatch(
-                                                setEpubReaderSettings({
-                                                    backgroundImage: {
-                                                        ...appSettings.epubReaderSettings.backgroundImage,
-                                                        layer: {
-                                                            ...appSettings.epubReaderSettings.backgroundImage
-                                                                .layer,
-                                                            color: value.hexa(),
-                                                        },
-                                                    },
-                                                }),
-                                            ),
-                                    ]}
-                                    paraBefore="Layer color&nbsp;:"
-                                />
-                                <InputRange
-                                    min={0}
-                                    max={1}
-                                    step={0.05}
-                                    value={appSettings.epubReaderSettings.backgroundImage.layer.opacity}
-                                    labeled
-                                    labelText="Layer opacity"
-                                    timeout={[
-                                        350,
-                                        (value) =>
-                                            dispatch(
-                                                setEpubReaderSettings({
-                                                    backgroundImage: {
-                                                        ...appSettings.epubReaderSettings.backgroundImage,
-                                                        layer: {
-                                                            ...appSettings.epubReaderSettings.backgroundImage
-                                                                .layer,
-                                                            opacity: value,
-                                                        },
-                                                    },
-                                                }),
-                                            ),
-                                    ]}
-                                />
-                            </>
-                        )}
+
+                        <InputColor
+                            labeled
+                            disabled={!appSettings.epubReaderSettings.backgroundImage.layer.enabled}
+                            value={colorUtils.new(appSettings.epubReaderSettings.backgroundImage.layer.color)}
+                            timeout={[
+                                500,
+                                (value) =>
+                                    dispatch(
+                                        setEpubReaderSettings({
+                                            backgroundImage: {
+                                                ...appSettings.epubReaderSettings.backgroundImage,
+                                                layer: {
+                                                    ...appSettings.epubReaderSettings.backgroundImage.layer,
+                                                    color: value.hexa(),
+                                                },
+                                            },
+                                        }),
+                                    ),
+                            ]}
+                            paraBefore="Layer color&nbsp;:"
+                        />
+                        <InputRange
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            disabled={!appSettings.epubReaderSettings.backgroundImage.layer.enabled}
+                            value={appSettings.epubReaderSettings.backgroundImage.layer.opacity}
+                            labeled
+                            labelText="Layer opacity"
+                            timeout={[
+                                350,
+                                (value) =>
+                                    dispatch(
+                                        setEpubReaderSettings({
+                                            backgroundImage: {
+                                                ...appSettings.epubReaderSettings.backgroundImage,
+                                                layer: {
+                                                    ...appSettings.epubReaderSettings.backgroundImage.layer,
+                                                    opacity: value,
+                                                },
+                                            },
+                                        }),
+                                    ),
+                            ]}
+                        />
                     </>
                 )}
                 <InputNumber
