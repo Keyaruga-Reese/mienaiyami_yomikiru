@@ -45,6 +45,10 @@ export type ListNavigatorProps<T> = {
     emptyMessage?: string;
     /** When provided, assigned to the search input for external focus etc. */
     inputRef?: React.RefObject<HTMLInputElement>;
+    /** Invoked when filteredItems or filterActive state changes. */
+    onFilteredItemsChange?: (items: T[], filterActive: boolean) => void;
+    /** When true, filter is not cleared when items change (e.g. on list refresh). */
+    persistFilterOnItemsChange?: boolean;
     children: React.ReactNode;
 };
 
@@ -57,6 +61,8 @@ function ListNavigatorProviderComponent<T>({
     onSelect,
     emptyMessage = "No items",
     inputRef: inputRefProp,
+    onFilteredItemsChange,
+    persistFilterOnItemsChange,
     children,
 }: ListNavigatorProps<T>) {
     const shortcutsMapped = useAppSelector(getShortcutsMapped, shallowEqual);
@@ -72,11 +78,17 @@ function ListNavigatorProviderComponent<T>({
 
     useEffect(() => {
         setFocused(-1);
-        setFilter("");
-        if (inputRef.current) {
-            inputRef.current.value = "";
+        if (!persistFilterOnItemsChange) {
+            setFilter("");
+            if (inputRef.current) {
+                inputRef.current.value = "";
+            }
         }
-    }, [items, inputRef]);
+    }, [items, inputRef, persistFilterOnItemsChange]);
+
+    useEffect(() => {
+        onFilteredItemsChange?.(filteredItems, filter !== "");
+    }, [filteredItems, filter, onFilteredItemsChange]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {

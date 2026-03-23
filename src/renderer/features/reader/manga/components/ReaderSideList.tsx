@@ -3,8 +3,8 @@ import {
     faArrowLeft,
     faArrowRight,
     faBookmark,
+    faDice,
     faLocationDot,
-    faRandom,
     faShuffle,
     faSort,
     faSyncAlt,
@@ -18,7 +18,7 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { getReaderManga, setReaderState } from "@store/reader";
 import { dialogUtils } from "@utils/dialog";
 import { formatUtils } from "@utils/file";
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { shallowEqual } from "react-redux";
 import { useAppContext } from "src/renderer/App";
 import AnilistBar from "../../../anilist/AnilistBar";
@@ -109,6 +109,9 @@ const ReaderSideList = memo(
 
         const [isShuffleMode, setShuffleMode] = useState(false);
         const [shuffledLocations, setShuffledLocations] = useState<ChapterData[]>([]);
+        const [isSearchFixed, setSearchFixed] = useState(false);
+        const [filteredItemsFromList, setFilteredItemsFromList] = useState<ChapterData[]>([]);
+        const [filterActive, setFilterActive] = useState(false);
         const recentChaptersRef = useRef<string[]>([]);
 
         const sortedLocations = useMemo(() => {
@@ -123,6 +126,8 @@ const ReaderSideList = memo(
         }, [chapterData, appSettings.locationListSortBy, appSettings.locationListSortType]);
 
         const locationsToUse = isShuffleMode ? shuffledLocations : sortedLocations;
+        const effectiveListForNav =
+            filterActive && filteredItemsFromList.length > 0 ? filteredItemsFromList : locationsToUse;
 
         useEffect(() => {
             if (!isShuffleMode) {
@@ -176,17 +181,17 @@ const ReaderSideList = memo(
         }, [isSideListPinned]);
 
         useEffect(() => {
-            if (locationsToUse.length >= 0 && mangaInReader) {
-                const index = locationsToUse.findIndex((e) => e.link === mangaInReader.progress?.chapterLink);
-                const prevCh = index <= 0 ? "~" : locationsToUse[index - 1].link;
-                const nextCh = index >= locationsToUse.length - 1 ? "~" : locationsToUse[index + 1].link;
+            if (effectiveListForNav.length >= 0 && mangaInReader) {
+                const index = effectiveListForNav.findIndex((e) => e.link === mangaInReader.progress?.chapterLink);
+                const prevCh = index <= 0 ? "~" : effectiveListForNav[index - 1].link;
+                const nextCh = index >= effectiveListForNav.length - 1 ? "~" : effectiveListForNav[index + 1].link;
                 if (appSettings.locationListSortType === "inverse" && !isShuffleMode) {
                     setPrevNextChapter({ prev: nextCh, next: prevCh });
                 } else {
                     setPrevNextChapter({ prev: prevCh, next: nextCh });
                 }
             }
-        }, [locationsToUse, appSettings.locationListSortType, isShuffleMode, mangaInReader]);
+        }, [effectiveListForNav, appSettings.locationListSortType, isShuffleMode, mangaInReader]);
 
         const makeChapterList = async () => {
             if (!mangaLink) return;
@@ -497,9 +502,10 @@ const ReaderSideList = memo(
         };
 
         const handleRandomChapterClick = () => {
-            if (locationsToUse.length === 0) return;
-            const pool = locationsToUse.filter((ch) => !recentChaptersRef.current.includes(ch.link));
-            const candidates = pool.length > 0 ? pool : locationsToUse;
+            const list = effectiveListForNav;
+            if (list.length === 0) return;
+            const pool = list.filter((ch) => !recentChaptersRef.current.includes(ch.link));
+            const candidates = pool.length > 0 ? pool : list;
             if (pool.length === 0) recentChaptersRef.current = [];
             const randomChapter = candidates[Math.floor(Math.random() * candidates.length)];
             openInReader(randomChapter.link);
@@ -516,6 +522,15 @@ const ReaderSideList = memo(
         const handleShuffleToggle = () => {
             setShuffleMode((v) => !v);
         };
+
+        const handleSearchFixedToggle = () => {
+            setSearchFixed((v) => !v);
+        };
+
+        const handleFilteredItemsChange = useCallback((items: ChapterData[], active: boolean) => {
+            setFilteredItemsFromList(items);
+            setFilterActive(active);
+        }, []);
 
         const handleChapterItemClick = (link: string) => {
             openInReader(link);
@@ -588,10 +603,28 @@ const ReaderSideList = memo(
                     onSelect={handleSelect}
                     emptyMessage="No chapters found"
                     inputRef={sideListSearchRef}
+                    onFilteredItemsChange={handleFilteredItemsChange}
+                    persistFilterOnItemsChange={isSearchFixed}
                 >
                     <div className="tools">
                         <div className="row1">
-                            <ListNavigator.SearchInput placeholder="Search chapters..." />
+                            <div className="search-with-pin">
+                                <ListNavigator.SearchInput placeholder="Search chapters..." />
+                                <button
+                                    className={`pin-filter-toggle ${isSearchFixed ? "selected" : ""}`}
+                                    data-tooltip={
+                                        isSearchFixed
+                                            ? "Filter pinned - search persists on list refresh; click to unpin"
+                                            : "Filter unpinned - search clears on list refresh; click to pin"
+                                    }
+                                    onClick={handleSearchFixedToggle}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={faThumbtack}
+                                        style={{ transform: isSearchFixed ? "rotate(45deg)" : "" }}
+                                    />
+                                </button>
+                            </div>
 
                             {(isShuffleMode || !appSettings.autoRefreshSideList) && (
                                 <button
@@ -611,21 +644,6 @@ const ReaderSideList = memo(
                                 onClick={handleSortClick}
                             >
                                 <FontAwesomeIcon icon={faSort} />
-                            </button>
-
-                            <button
-                                className={`shuffle-mode-toggle ${isShuffleMode ? "selected" : ""}`}
-                                data-tooltip={
-                                    isShuffleMode
-                                        ? "Shuffle ON - list order randomized; click to use sorted"
-                                        : "Shuffle OFF - click to randomize chapter order"
-                                }
-                                onClick={handleShuffleToggle}
-                                aria-pressed={isShuffleMode}
-                                type="button"
-                            >
-                                <FontAwesomeIcon icon={faShuffle} />
-                                <span className="shuffle-label">{isShuffleMode ? "ON" : "Off"}</span>
                             </button>
                         </div>
 
@@ -697,14 +715,29 @@ const ReaderSideList = memo(
                                 >
                                     <FontAwesomeIcon icon={faLocationDot} />
                                 </button>
+
+                                <button
+                                    className={`shuffle-mode-toggle ${isShuffleMode ? "selected" : ""}`}
+                                    data-tooltip={
+                                        isShuffleMode
+                                            ? "Shuffle ON - list order randomized; click to use sorted"
+                                            : "Shuffle OFF - click to randomize chapter order"
+                                    }
+                                    onClick={handleShuffleToggle}
+                                    aria-pressed={isShuffleMode}
+                                    type="button"
+                                >
+                                    <FontAwesomeIcon icon={faShuffle} />
+                                    <span className="shuffle-label">{isShuffleMode ? "ON" : "Off"}</span>
+                                </button>
                                 <Button
                                     className="ctrl-menu-item"
                                     btnRef={openRandomChapterRef}
                                     tooltip="Open Random Chapter"
-                                    disabled={locationsToUse.length === 0}
+                                    disabled={effectiveListForNav.length === 0}
                                     clickAction={handleRandomChapterClick}
                                 >
-                                    <FontAwesomeIcon icon={faRandom} />
+                                    <FontAwesomeIcon icon={faDice} />
                                 </Button>
                             </div>
                         )}

@@ -194,6 +194,27 @@
             flex-direction: row;
             height: 44px;
             // padding: 0 10px;
+
+            .search-with-pin {
+                display: flex;
+                flex: 1;
+                min-width: 0;
+                gap: 4px;
+                align-items: center;
+
+                input.search-input {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .pin-filter-toggle {
+                    flex-shrink: 0;
+                    &.selected {
+                        opacity: 1;
+                        background-color: var(--btn-color-focus);
+                    }
+                }
+            }
         }
 
         button,

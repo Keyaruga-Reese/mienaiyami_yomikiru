@@ -208,6 +208,11 @@ const Usage: React.FC = () => {
                             prev/next follow shuffled order. Auto-refresh disabled in this mode. Session-only.
                         </li>
                         <li>
+                            <b>Sidelist search:</b> When filter is active, prev/next and random use the filtered
+                            list. Use the pin icon next to the search input to persist the filter when the list
+                            refreshes (e.g. auto-refresh, manual Refresh).
+                        </li>
+                        <li>
                             Zen Mode (Full Screen Mode): Hides UI, Only shows images and page number if enabled.
                             Can be enabled using the shortcut key defined,{" "}
                             <code>{shortcuts.find((e) => e.command === "toggleZenMode")?.keys.join(", ")}</code>
