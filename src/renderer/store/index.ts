@@ -8,6 +8,7 @@ import mainSettingsReducer from "./mainSettings";
 import prevNextChapterReducer from "./prevNextChapter";
 import readerReducer from "./reader";
 import readerPresetsReducer from "./readerPresets";
+import { readerPresetsAutosaveMiddleware } from "./readerPresetsAutosaveMiddleware";
 import shortcutsReducer from "./shortcuts";
 import themesReducer from "./themes";
 import uiReducer from "./ui";
@@ -30,7 +31,7 @@ const store = configureStore({
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: false,
-        }),
+        }).concat(readerPresetsAutosaveMiddleware),
 });
 
 export default store;

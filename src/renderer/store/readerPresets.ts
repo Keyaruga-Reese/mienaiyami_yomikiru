@@ -16,6 +16,7 @@ import { setAppSettings, setEpubReaderSettings, setReaderSettings } from "./appS
 import type { AppDispatch, RootState } from "./index";
 
 let initialState: ReaderPresetsState = initReaderPresets;
+// TODO: normalize reader settings + presets; remove duplications and only keep IDs in appSettings?
 
 if (window.fs.existsSync(readerPresetsPath)) {
     try {
@@ -186,6 +187,13 @@ const readerPresets = createSlice({
                 return state;
             }
         },
+        setPresetAutosave: (state, action: PayloadAction<{ id: string; autosave: boolean }>) => {
+            const idx = state.presets.findIndex((p) => p.id === action.payload.id);
+            if (idx >= 0) {
+                state.presets[idx].autosave = action.payload.autosave;
+                saveReaderPresets(state);
+            }
+        },
     },
 });
 
@@ -201,6 +209,7 @@ export const {
     movePreset,
     refreshReaderPresets,
     resetToDefaults,
+    setPresetAutosave,
 } = readerPresets.actions;
 
 /**

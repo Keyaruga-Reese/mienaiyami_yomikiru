@@ -1,4 +1,4 @@
-import { faPlus, faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faSave, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { setEpubReaderSettings, setReaderSettings } from "@store/appSettings";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
@@ -7,9 +7,11 @@ import {
     addMangaPreset,
     deleteReaderPresetWithFallback,
     selectReaderPreset,
+    setPresetAutosave,
     updateBookPreset,
     updateMangaPreset,
 } from "@store/readerPresets";
+import InputCheckbox from "@ui/InputCheckbox";
 import TextInputModal from "@ui/TextInputModal";
 import { dialogUtils } from "@utils/dialog";
 import type { BookReaderPreset, MangaReaderPreset } from "@utils/readerPresets";
@@ -31,6 +33,7 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
         | BookReaderPreset
     )[];
     const presetId = type === "manga" ? appSettings.mangaReaderPresetId : appSettings.bookReaderPresetId;
+    const preset = presets.find((p) => p.id === presetId);
     const settingsCollapsed =
         type === "manga"
             ? appSettings.readerSettings.settingsCollapsed
@@ -68,6 +71,7 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
             id: newId,
             name,
             type,
+            autosave: false,
             data: readerData,
         };
         if (type === "manga") {
@@ -121,8 +125,19 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
                             >
                                 <FontAwesomeIcon icon={faPlus} />
                             </button>
-                            {presetId && (
+                            {preset && (
                                 <>
+                                    <button
+                                        className={preset.autosave ? "optionSelected" : ""}
+                                        onClick={() =>
+                                            dispatch(
+                                                setPresetAutosave({ id: preset.id, autosave: !preset.autosave }),
+                                            )
+                                        }
+                                        title={preset.autosave ? "Disable autosave" : "Enable autosave"}
+                                    >
+                                        <FontAwesomeIcon icon={faSync} />
+                                    </button>
                                     <button
                                         onClick={() => {
                                             const preset = presets.find((p) => p.id === presetId);
@@ -157,7 +172,10 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
                                             onClick={() => {
                                                 if (!presetId) return;
                                                 dialogUtils
-                                                    .confirm({ message: "Delete preset?", noOption: false })
+                                                    .confirm({
+                                                        message: "Delete preset?",
+                                                        noOption: false,
+                                                    })
                                                     .then((res) => {
                                                         if (res.response === 0) {
                                                             dispatch(deleteReaderPresetWithFallback(presetId));

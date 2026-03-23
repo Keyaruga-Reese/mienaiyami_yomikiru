@@ -12,6 +12,7 @@ export const mangaReaderPresetSchema = z.object({
     name: z.string(),
     type: z.literal("manga"),
     data: mangaReaderSettingsSchema,
+    autosave: z.boolean().default(false),
 });
 
 export const bookReaderPresetSchema = z.object({
@@ -19,6 +20,7 @@ export const bookReaderPresetSchema = z.object({
     name: z.string(),
     type: z.literal("book"),
     data: bookReaderSettingsSchema,
+    autosave: z.boolean().default(false),
 });
 
 export const readerPresetSchema = z.discriminatedUnion("type", [mangaReaderPresetSchema, bookReaderPresetSchema]);
@@ -40,6 +42,7 @@ const initPresets: ReaderPreset[] = [
         id: "manga-preset-paged-ltr",
         name: "Paged LTR",
         type: "manga",
+        autosave: false,
         data: {
             ...defaultMangaReaderSettings,
             readerTypeSelected: 1,
@@ -53,6 +56,7 @@ const initPresets: ReaderPreset[] = [
         id: "manga-preset-long-strip",
         name: "Long Strip",
         type: "manga",
+        autosave: false,
         data: {
             ...defaultMangaReaderSettings,
             readerTypeSelected: 0,
@@ -65,6 +69,7 @@ const initPresets: ReaderPreset[] = [
         id: "manga-preset-longstrip-gaps",
         name: "Long Strip with Gaps",
         type: "manga",
+        autosave: false,
         data: {
             ...defaultMangaReaderSettings,
             readerTypeSelected: 0,
@@ -77,6 +82,7 @@ const initPresets: ReaderPreset[] = [
         id: "book-preset-default",
         name: "Default",
         type: "book",
+        autosave: false,
         data: defaultBookReaderSettings satisfies BookReaderSettings,
     },
 ];
@@ -102,12 +108,14 @@ export const buildFirstRunPresets = (
             id: USER_PRESET_MANGA_ID,
             name: "User",
             type: "manga",
+            autosave: true,
             data: mangaSettings,
         },
         {
             id: USER_PRESET_BOOK_ID,
             name: "User",
             type: "book",
+            autosave: true,
             data: bookSettings,
         },
     ],
@@ -151,6 +159,9 @@ export const isDefaultMangaPresetById = (id: string): boolean =>
  * Parses file data into validated ReaderPresetsState. Returns initReaderPresets if invalid.
  */
 export const parseReaderPresetsState = (data: unknown): ReaderPresetsState => {
+    if (data == null || (typeof data === "object" && !("presets" in data) && !Array.isArray(data))) {
+        return initReaderPresets;
+    }
     const r = readerPresetsStateSchema.safeParse(data);
     if (!r.success) {
         window.logger.warn("readerPresets schema validation failed, using defaults:", r.error.message);

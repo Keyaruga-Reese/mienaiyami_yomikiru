@@ -278,8 +278,10 @@ const Usage: React.FC = () => {
                             preset was selected, another preset is auto-selected.
                         </li>
                         <li>
-                            In Reader Settings: <b>+</b> adds a new preset (name via modal). <b>Save</b> updates
-                            the selected preset with current settings.
+                            In Reader Settings: <b>+</b> adds a new preset (name via modal). <b>Autosave</b>{" "}
+                            toggle: when on, changes are saved into the selected preset automatically; off requires
+                            manual Update or <b>savePreset</b> shortcut. User preset has autosave on by default.{" "}
+                            <b>Save</b> (floppy icon) manually updates the selected preset.
                         </li>
                         <li>
                             <code>{shortcuts.find((e) => e.command === "savePreset")?.keys.join(", ")}</code> saves
