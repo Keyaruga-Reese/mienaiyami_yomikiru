@@ -18,6 +18,12 @@
 
 # 2.23.2-beta
 
+### 2.23.2-beta.9
+
+- fix: repair reader presets JSON when keys are missing or invalid instead of replacing entire presets. This fixes the issue where all presets were invalidated just because of one invalid key. Now user manga/book presets cannot be deleted; reset defaults restores bundled presets and recreates User from current reader settings.
+- fix: multi-window sync for settings, theme, reader presets, and shortcuts. After saves, other windows refresh with debounced JSON reads and retries instead of stale or failed loads.
+- fix: environment variable setup in GitHub Actions for releases for detailed app info.
+
 ### 2.23.2-beta.8
 
 - feat: add minimize to tray option (#489). When enabled, minimizing hides window to tray. Tray menu lists all windows; left-click restores or focuses, right-click shows window list and Exit.
