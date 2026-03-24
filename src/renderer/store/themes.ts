@@ -2,6 +2,7 @@ import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import { colorUtils } from "@utils/color";
 import { dialogUtils } from "@utils/dialog";
 import { saveJSONfile, themesPath } from "../utils/file";
+import { readJsonFileWithRetrySync } from "../utils/readJsonFileWithRetry";
 import { initThemeData, themeProps } from "../utils/theme";
 
 export const setSysBtnColor = (blurred = false) => {
@@ -62,106 +63,75 @@ const initialState: Themes = {
 };
 
 if (window.fs.existsSync(themesPath)) {
-    const raw = window.fs.readFileSync(themesPath, "utf8");
-    if (raw) {
-        try {
-            let data = JSON.parse(raw);
-            // todo remove in later version
-            if (data.allData[0].main["--body-bg"]) {
-                throw new Error("newTheme");
-            }
-            // validate theme data
-            let changed = false;
-            // todo remove in later version
-            if (Array.isArray(data) || !Object.hasOwn(data, "name")) {
-                data = {
-                    name: "theme2",
-                    allData: data,
-                };
-                window.logger.log("Old theme version detected. Converting to new.");
-                saveJSONfile(themesPath, data);
-            }
+    try {
+        const data = readJsonFileWithRetrySync<Themes>(themesPath, {
+            maxAttempts: 10,
+            onRetry: (attempt, error) => {
+                window.logger.log("themes initial retry:", attempt, error);
+            },
+        });
+        let changed = false;
 
-            // validate theme data
-            if (typeof data.allData[0].main === "string" || !Array.isArray(data.allData))
-                throw { message: "Theme variable does not exist on theme.main" };
-            const addedProp = new Set<string>();
-            for (const prop in themeProps) {
-                let rewriteNeeded = false;
-                (data as Themes).allData.forEach((e) => {
-                    if (!e.main[prop as ThemeDataMain]) {
-                        if (initThemeData.allData.map((t) => t.name).includes(e.name)) {
-                            window.logger.log(
-                                `"${prop}" does not exist on default theme - "${e.name}", rewriting it whole.`,
-                            );
-                            e.main = initThemeData.allData.find((t) => t.name === e.name)!.main;
-                            rewriteNeeded = true;
-                        } else {
-                            window.logger.log(
-                                `"${prop}" does not exist on theme - "${e.name}", adding it with value "#ff0000".`,
-                            );
-                            addedProp.add(`\t"${themeProps[prop as ThemeDataMain]}"`);
-                            rewriteNeeded = true;
-                            changed = true;
-                            e.main[prop as ThemeDataMain] = "#ff0000";
-                        }
+        // validate theme data
+        if (typeof data.allData[0].main === "string" || !Array.isArray(data.allData))
+            throw { message: "Theme variable does not exist on theme.main" };
+        const addedProp = new Set<string>();
+        for (const prop in themeProps) {
+            let rewriteNeeded = false;
+            (data as Themes).allData.forEach((e) => {
+                if (!e.main[prop as ThemeDataMain]) {
+                    if (initThemeData.allData.map((t) => t.name).includes(e.name)) {
+                        window.logger.log(
+                            `"${prop}" does not exist on default theme - "${e.name}", rewriting it whole.`,
+                        );
+                        e.main = initThemeData.allData.find((t) => t.name === e.name)!.main;
+                        rewriteNeeded = true;
+                    } else {
+                        window.logger.log(
+                            `"${prop}" does not exist on theme - "${e.name}", adding it with value "#ff0000".`,
+                        );
+                        addedProp.add(`\t"${themeProps[prop as ThemeDataMain]}"`);
+                        rewriteNeeded = true;
+                        changed = true;
+                        e.main[prop as ThemeDataMain] = "#ff0000";
                     }
-                    /**check and fix change in theme value */
-                    initThemeData.allData.forEach((e) => {
-                        const dataTheme = (data as Themes).allData.find((a) => a.name === e.name);
-                        if (dataTheme)
-                            Object.entries(e.main).forEach(([key, value]) => {
-                                dataTheme.main[key as keyof ThemeData["main"]] = value;
-                            });
-                    });
-                });
-                if (rewriteNeeded) saveJSONfile(themesPath, data);
-            }
-            // check if default theme exist
-            // todo: remove in later versions, today 15/07/2023
-            let changed2 = false;
-            [...initThemeData.allData].reverse().forEach((e) => {
-                if (!data.allData.map((e: any) => e.name).includes(e.name)) {
-                    window.logger.log(`Added default theme "${e.name}".`);
-                    data.allData.unshift(e);
-                    changed2 = true;
                 }
+                /**check and fix change in theme value */
+                initThemeData.allData.forEach((e) => {
+                    const dataTheme = (data as Themes).allData.find((a) => a.name === e.name);
+                    if (dataTheme)
+                        Object.entries(e.main).forEach(([key, value]) => {
+                            dataTheme.main[key as keyof ThemeData["main"]] = value;
+                        });
+                });
             });
-            if (changed2) {
-                dialogUtils.warn({
-                    message: "Changes in Default Themes. Old themes still exist but can be deleted.",
-                });
-                saveJSONfile(themesPath, data);
-            }
-            if (changed) {
-                dialogUtils.warn({
-                    message:
-                        'Some properties were missing in themes. Added new as "Red" color, change accordingly or re-edit default themes.' +
-                        "\nNew Properties:\n" +
-                        [...addedProp.values()].join("\n"),
-                });
-            }
-            initialState.name = data.name;
-            initialState.allData = data.allData;
-        } catch (err: any) {
-            if (err.message === "newTheme")
-                dialogUtils.customError({
-                    message: "Theme system changed, old themes will be deleted. Sorry for your inconvenience.",
-                });
-            else
-                dialogUtils.customError({
-                    message: `Unable to parse ${themesPath}\nMaking new themes.json...\n${err}`,
-                });
-            window.logger.error(err);
-            initialState.name = initThemeData.name;
-            initialState.allData = initThemeData.allData;
-            // window.fs.writeFileSync(themesPath, JSON.stringify(initThemeData));
-            saveJSONfile(themesPath, initThemeData);
+            if (rewriteNeeded) saveJSONfile(themesPath, data);
         }
-        // if (JSON.parse(raw).length < 3) {
-        //     window.fs.writeFileSync(themesPath, JSON.stringify(themes));
-        //     initialState.push(...themes);
-        // }else
+        // check if default theme exist
+        if (changed) {
+            dialogUtils.warn({
+                message:
+                    'Some properties were missing in themes. Added new as "Red" color, change accordingly or re-edit default themes.' +
+                    "\nNew Properties:\n" +
+                    [...addedProp.values()].join("\n"),
+            });
+        }
+        initialState.name = data.name;
+        initialState.allData = data.allData;
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message === "newTheme")
+            dialogUtils.customError({
+                message: "Theme system changed, old themes will be deleted. Sorry for your inconvenience.",
+            });
+        else
+            dialogUtils.customError({
+                message: `Unable to parse ${themesPath}\nMaking new themes.json...\n${err}`,
+            });
+        window.logger.error(err);
+        initialState.name = initThemeData.name;
+        initialState.allData = initThemeData.allData;
+        saveJSONfile(themesPath, initThemeData);
     }
 } else {
     initialState.name = initThemeData.name;
@@ -203,7 +173,12 @@ const themes = createSlice({
         },
         refreshThemes: () => {
             try {
-                return JSON.parse(window.fs.readFileSync(themesPath, "utf8"));
+                return readJsonFileWithRetrySync<Themes>(themesPath, {
+                    maxAttempts: 8,
+                    onRetry: (attempt, error) => {
+                        window.logger.log("themes refresh retry:", attempt, error);
+                    },
+                });
             } catch {
                 dialogUtils.customError({
                     title: "Error",

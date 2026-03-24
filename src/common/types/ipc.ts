@@ -97,6 +97,7 @@ export type FileSystemChannels = {
     >;
     "fs:showInExplorer": ChannelDefinition<string, void>;
     "fs:saveFile": ChannelDefinition<{ filePath: string; data: string }, void>;
+    "fs:fileChanged": ChannelDefinition<{ filePath: string; sourceWindowId?: number; ts: number }, void, "m2r">;
 };
 
 export type AppUpdateChannel = "stable" | "beta";

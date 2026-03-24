@@ -14,7 +14,7 @@ import {
 import { getMainSettings, setMainSettings } from "@store/mainSettings";
 import { resetReaderState } from "@store/reader";
 import { refreshReaderPresetsWithReconcile } from "@store/readerPresets";
-import { getShortcutsMapped } from "@store/shortcuts";
+import { getShortcutsMapped, refreshShortcuts } from "@store/shortcuts";
 import { refreshThemes, setTheme } from "@store/themes";
 import { setAnilistEditOpen, setAnilistLoginOpen, setAnilistSearchOpen, toggleSettingsOpen } from "@store/ui";
 import { dialogUtils } from "@utils/dialog";
@@ -32,12 +32,11 @@ import { shallowEqual } from "react-redux";
 import Main from "./Main";
 import TopBar from "./TopBar";
 import {
-    bookmarksPath,
     formatUtils,
-    historyPath,
     promptSelectDir,
     readerPresetsPath,
     settingsPath,
+    shortcutsPath,
     themesPath,
 } from "./utils/file";
 
@@ -194,6 +193,13 @@ const App = (): ReactElement => {
                 console.log("mainSettings:sync", settings);
                 dispatch(setMainSettings(settings));
             }),
+            window.electron.on("fs:fileChanged", ({ filePath }) => {
+                // window.logger.log("fs:fileChanged sync", filePath, sourceWindowId);
+                if (filePath === settingsPath && appSettings.syncSettings) dispatch(refreshAppSettings());
+                if (filePath === shortcutsPath && appSettings.syncSettings) dispatch(refreshShortcuts());
+                if (filePath === themesPath && appSettings.syncThemes) dispatch(refreshThemes());
+                if (filePath === readerPresetsPath) dispatch(refreshReaderPresetsWithReconcile());
+            }),
         );
 
         listeners.push(
@@ -208,21 +214,26 @@ const App = (): ReactElement => {
         // here bcoz reload doesnt make window exit fullscreen
         if (window.electron.currentWindow.isFullScreen()) window.electron.currentWindow.setFullScreen(false);
 
-        const filesToWatch = [historyPath, bookmarksPath, readerPresetsPath];
-        if (appSettings.syncSettings) filesToWatch.push(settingsPath);
-        if (appSettings.syncThemes) filesToWatch.push(themesPath);
-        const closeWatcher = window.chokidar.watch({
-            path: filesToWatch,
-            event: "change",
-            callback: (path) => {
-                if (path === settingsPath) dispatch(refreshAppSettings());
-                if (path === themesPath) dispatch(refreshThemes());
-                if (path === readerPresetsPath) dispatch(refreshReaderPresetsWithReconcile());
-            },
-        });
+        //! moving to fs:fileChanged listener
+        // const filesToWatch = [readerPresetsPath, shortcutsPath];
+        // if (appSettings.syncSettings) filesToWatch.push(settingsPath);
+        // if (appSettings.syncThemes) filesToWatch.push(themesPath);
+        // const debouncedRefreshFromWatcher = debounce((path: string) => {
+        //     if (path === settingsPath) dispatch(refreshAppSettings());
+        //     if (path === themesPath) dispatch(refreshThemes());
+        //     if (path === readerPresetsPath) dispatch(refreshReaderPresetsWithReconcile());
+        //     if (path === shortcutsPath) dispatch(refreshShortcuts());
+        // }, 150);
+        // const closeWatcher = window.chokidar.watch({
+        //     path: filesToWatch,
+        //     event: "change",
+        //     callback: (_event, path) => {
+        //         debouncedRefreshFromWatcher(path);
+        //     },
+        // });
 
         return () => {
-            closeWatcher();
+            // closeWatcher();
             listeners.forEach((e) => void e());
         };
     }, []);

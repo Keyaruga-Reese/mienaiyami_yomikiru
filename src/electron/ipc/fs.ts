@@ -3,8 +3,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { log, saveFile } from "@electron/util";
+import { WindowManager } from "@electron/util/window";
 import * as crossZip from "cross-zip";
-import { dialog } from "electron";
+import { BrowserWindow, dialog } from "electron";
 import { ipc } from "./utils";
 
 // manual merge from https://github.com/mienaiyami/yomikiru/commit/b1b6acbf18ff4eac5d352d91fafd511223cc8ad0
@@ -58,6 +59,14 @@ export const registerFSHandlers = (): void => {
     ipc.handle("fs:saveFile", async (_event, { filePath, data }) => {
         try {
             saveFile(filePath, data);
+            const sourceWindowId = BrowserWindow.fromWebContents(_event.sender)?.id;
+            WindowManager.getAllWindows().forEach((window) => {
+                ipc.send(window.webContents, "fs:fileChanged", {
+                    filePath,
+                    sourceWindowId,
+                    ts: Date.now(),
+                });
+            });
         } catch (error) {
             log.error("electron:fs:saveFile:", error);
         }

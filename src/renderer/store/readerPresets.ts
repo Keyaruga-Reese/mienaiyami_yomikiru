@@ -13,6 +13,7 @@ import {
     USER_PRESET_MANGA_ID,
 } from "../utils/readerPresets";
 import type { BookReaderSettings, MangaReaderSettings } from "../utils/readerSettingsSchema";
+import { readJsonFileWithRetrySync } from "../utils/readJsonFileWithRetry";
 import { parseAppSettings } from "../utils/settingsSchema";
 import { setAppSettings, setEpubReaderSettings, setReaderSettings } from "./appSettings";
 import type { AppDispatch, RootState } from "./index";
@@ -22,8 +23,12 @@ let initialState: ReaderPresetsState = initReaderPresets;
 
 if (window.fs.existsSync(readerPresetsPath)) {
     try {
-        const raw = window.fs.readFileSync(readerPresetsPath, "utf8");
-        const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+        const parsed = readJsonFileWithRetrySync(readerPresetsPath, {
+            maxAttempts: 10,
+            onRetry: (attempt, error) => {
+                window.logger.log("readerPresets initial retry:", attempt, error);
+            },
+        });
         const { state, didNormalize } = parseReaderPresetsStateWithMeta(parsed);
         initialState = state;
         if (didNormalize) {
@@ -222,7 +227,12 @@ const readerPresets = createSlice({
          */
         refreshReaderPresets: (state) => {
             try {
-                const data = JSON.parse(window.fs.readFileSync(readerPresetsPath, "utf8")) as unknown;
+                const data = readJsonFileWithRetrySync(readerPresetsPath, {
+                    maxAttempts: 8,
+                    onRetry: (attempt, error) => {
+                        window.logger.log("readerPresets refresh retry:", attempt, error);
+                    },
+                });
                 const { state: next, didNormalize } = parseReaderPresetsStateWithMeta(data);
                 if (didNormalize) saveJSONfile(readerPresetsPath, next);
                 return next;

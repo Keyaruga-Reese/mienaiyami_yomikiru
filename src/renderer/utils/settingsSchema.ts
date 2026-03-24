@@ -9,6 +9,7 @@ import {
     defaultMangaReaderSettings,
     mangaReaderSettingsSchema,
 } from "./readerSettingsSchema";
+import { readJsonFileWithRetrySync } from "./readJsonFileWithRetry";
 import { repairZodInputWithDefaults } from "./zodRepair";
 
 const sortTypeEnum = z.union([z.literal("normal"), z.literal("inverse")]);
@@ -126,7 +127,12 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
     }
 
     try {
-        const parsedJSON = JSON.parse(window.fs.readFileSync(settingsPath, "utf-8"));
+        const parsedJSON = readJsonFileWithRetrySync(settingsPath, {
+            maxAttempts: 10,
+            onRetry: (attempt, error) => {
+                window.logger.log("parseAppSettings retry:", attempt, error);
+            },
+        });
         const first = settingSchema.safeParse(parsedJSON);
         if (first.success) return first.data;
 
@@ -151,7 +157,6 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
         return repaired.data;
     } catch (err) {
         window.logger.error(err);
-        window.logger.log(window.fs.readFileSync(settingsPath, "utf-8"));
         dialogUtils.customError({ message: "Unable to parse settings.json. Remaking." });
         makeSettingsJson();
         return defaultSettings;

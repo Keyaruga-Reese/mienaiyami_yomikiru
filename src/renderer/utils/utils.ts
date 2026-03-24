@@ -84,3 +84,21 @@ export const randomString = (length: number) => {
 //         element.scrollIntoView({ behavior, block: "start" });
 //     }
 // };
+
+export const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Returns a debounced function that delays invoking `callback` until `waitMs` has elapsed.
+ */
+export const debounce = <T extends unknown[]>(
+    callback: (...args: T) => void,
+    waitMs: number,
+): ((...args: T) => void) => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    return (...args: T) => {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            callback(...args);
+        }, waitMs);
+    };
+};
