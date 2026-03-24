@@ -109,6 +109,11 @@ jobs:
   buildLinux:
     needs: check-ci-status
     runs-on: ubuntu-22.04
+    env:
+      BUILD_COMMIT: ${{ needs.check-ci-status.outputs.commit-sha }}
+      BUILD_VERSION: ${{ needs.check-ci-status.outputs.version }}
+      BUILD_DATE: ${{ needs.check-ci-status.outputs.build-date }}
+      BUILD_BRANCH: ${{ needs.check-ci-status.outputs.build-branch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -129,13 +134,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Set build info
-        run: |
-          echo "BUILD_COMMIT=${{ needs.check-ci-status.outputs.commit-sha }}" >> $GITHUB_ENV
-          echo "BUILD_VERSION=${{ needs.check-ci-status.outputs.version }}" >> $GITHUB_ENV
-          echo "BUILD_DATE=${{ needs.check-ci-status.outputs.build-date }}" >> $GITHUB_ENV
-          echo "BUILD_BRANCH=${{ needs.check-ci-status.outputs.build-branch }}" >> $GITHUB_ENV
 
       - name: forge make
         run: pnpm make:deb
@@ -162,6 +160,11 @@ jobs:
   build:
     needs: [check-ci-status, buildLinux]
     runs-on: windows-latest
+    env:
+      BUILD_COMMIT: ${{ needs.check-ci-status.outputs.commit-sha }}
+      BUILD_VERSION: ${{ needs.check-ci-status.outputs.version }}
+      BUILD_DATE: ${{ needs.check-ci-status.outputs.build-date }}
+      BUILD_BRANCH: ${{ needs.check-ci-status.outputs.build-branch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -201,13 +204,6 @@ jobs:
             mkdir -p ./build-artifacts
             cp -r ./linux-artifacts/build-artifacts/* ./build-artifacts/ || true
           fi
-
-      - name: Set build info
-        run: |
-          echo "BUILD_COMMIT=${{ needs.check-ci-status.outputs.commit-sha }}" >> $GITHUB_ENV
-          echo "BUILD_VERSION=${{ needs.check-ci-status.outputs.version }}" >> $GITHUB_ENV
-          echo "BUILD_DATE=${{ needs.check-ci-status.outputs.build-date }}" >> $GITHUB_ENV
-          echo "BUILD_BRANCH=${{ needs.check-ci-status.outputs.build-branch }}" >> $GITHUB_ENV
 
       - name: Build for windows
         run: |
