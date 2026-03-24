@@ -11,10 +11,9 @@ import {
     updateBookPreset,
     updateMangaPreset,
 } from "@store/readerPresets";
-import InputCheckbox from "@ui/InputCheckbox";
 import TextInputModal from "@ui/TextInputModal";
 import { dialogUtils } from "@utils/dialog";
-import type { BookReaderPreset, MangaReaderPreset } from "@utils/readerPresets";
+import { type BookReaderPreset, isUserPresetId, type MangaReaderPreset } from "@utils/readerPresets";
 import type { BookReaderSettings, MangaReaderSettings } from "@utils/readerSettingsSchema";
 import { memo, useState } from "react";
 
@@ -167,7 +166,7 @@ const ReaderPresetSection = memo(({ type }: ReaderPresetSectionProps) => {
                                     >
                                         <FontAwesomeIcon icon={faSave} />
                                     </button>
-                                    {presets.length > 1 && (
+                                    {presets.length > 1 && presetId && !isUserPresetId(presetId) && (
                                         <button
                                             onClick={() => {
                                                 if (!presetId) return;

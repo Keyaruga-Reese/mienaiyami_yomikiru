@@ -274,8 +274,9 @@ const Usage: React.FC = () => {
                             current settings.
                         </li>
                         <li>
-                            <b>Select</b> applies a preset. <b>Delete</b> (trash icon) removes it; if the deleted
-                            preset was selected, another preset is auto-selected.
+                            <b>Select</b> applies a preset. <b>Delete</b> (trash icon) removes a custom preset; if
+                            the deleted preset was selected, another preset is auto-selected. The &quot;User&quot;
+                            preset cannot be removed.
                         </li>
                         <li>
                             In Reader Settings: <b>+</b> adds a new preset (name via modal). <b>Autosave</b>{" "}
@@ -321,7 +322,9 @@ const Usage: React.FC = () => {
                             excluded). Import from file for bulk transfer; duplicates by id are skipped.
                         </li>
                         <li>
-                            <b>Reset to Default Presets</b> restores built-in presets to their original state.
+                            <b>Reset to Default Presets</b> restores built-in presets to their original state; if a
+                            &quot;User&quot; preset for manga or book is missing, it is recreated from your current
+                            reader settings. Custom presets are kept.
                         </li>
                     </ul>
                 </li>

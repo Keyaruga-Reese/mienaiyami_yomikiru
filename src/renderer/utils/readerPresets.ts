@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getValueFromDeepObject } from "./objectPath";
 import type { BookReaderSettings, MangaReaderSettings } from "./readerSettingsSchema";
 import {
     bookReaderSettingsSchema,
@@ -6,6 +7,7 @@ import {
     defaultMangaReaderSettings,
     mangaReaderSettingsSchema,
 } from "./readerSettingsSchema";
+import { repairZodInputWithDefaults } from "./zodRepair";
 
 export const mangaReaderPresetSchema = z.object({
     id: z.string(),
@@ -37,7 +39,24 @@ export type ReaderPresetsState = {
     presets: ReaderPreset[];
 };
 
+export const USER_PRESET_MANGA_ID = "user-preset-manga";
+export const USER_PRESET_BOOK_ID = "user-preset-book";
+
 const initPresets: ReaderPreset[] = [
+    {
+        id: USER_PRESET_MANGA_ID,
+        name: "User",
+        type: "manga",
+        autosave: true,
+        data: defaultMangaReaderSettings,
+    },
+    {
+        id: USER_PRESET_BOOK_ID,
+        name: "User",
+        type: "book",
+        autosave: true,
+        data: defaultBookReaderSettings,
+    },
     {
         id: "manga-preset-paged-ltr",
         name: "Paged LTR",
@@ -90,9 +109,10 @@ const initPresets: ReaderPreset[] = [
 export const initReaderPresets: ReaderPresetsState = {
     presets: initPresets,
 };
-
-export const USER_PRESET_MANGA_ID = "user-preset-manga";
-export const USER_PRESET_BOOK_ID = "user-preset-book";
+/**
+ * @returns true if the id is the non-removable User preset for manga or book.
+ */
+export const isUserPresetId = (id: string): boolean => id === USER_PRESET_MANGA_ID || id === USER_PRESET_BOOK_ID;
 
 /**
  * First-run presets: defaults + User preset per type with current settings from app.
@@ -103,7 +123,7 @@ export const buildFirstRunPresets = (
     bookSettings: BookReaderSettings,
 ): ReaderPresetsState => ({
     presets: [
-        ...initPresets,
+        ...initPresets.filter((p) => !isUserPresetId(p.id)),
         {
             id: USER_PRESET_MANGA_ID,
             name: "User",
@@ -121,11 +141,52 @@ export const buildFirstRunPresets = (
     ],
 });
 
+const mangaPresetTopDefaults: MangaReaderPreset = {
+    id: "",
+    name: "Manga preset",
+    type: "manga",
+    autosave: false,
+    data: defaultMangaReaderSettings,
+};
+
+const bookPresetTopDefaults: BookReaderPreset = {
+    id: "",
+    name: "Book preset",
+    type: "book",
+    autosave: false,
+    data: defaultBookReaderSettings,
+};
+
+/**
+ * Resolves default for a Zod path into `readerPresetsState` (uses `preset.type` for `data.*` defaults).
+ */
+const getDefaultForReaderPresetsPath = (fixed: Record<string, unknown>, path: (string | number)[]): unknown => {
+    if (path[0] !== "presets" || path.length === 1) {
+        return getValueFromDeepObject(initReaderPresets, path);
+    }
+    if (typeof path[1] !== "number") return undefined;
+    const idx = path[1];
+    const presets = fixed.presets as unknown[] | undefined;
+    const preset = presets?.[idx] as { type?: string } | undefined;
+    const t = preset?.type === "book" ? "book" : "manga";
+    const topDefaults = t === "book" ? bookPresetTopDefaults : mangaPresetTopDefaults;
+    const dataDefaults = t === "book" ? defaultBookReaderSettings : defaultMangaReaderSettings;
+    if (path.length >= 3 && path[2] === "data") {
+        if (path.length === 3) return dataDefaults;
+        return getValueFromDeepObject(dataDefaults, path.slice(3));
+    }
+    return getValueFromDeepObject(topDefaults, path.slice(2));
+};
+
 /**
  * Parses a single preset from clipboard. Returns null if invalid.
  */
 export const parseMangaPreset = (data: unknown): MangaReaderPreset | null => {
-    const r = mangaReaderPresetSchema.safeParse(data);
+    const r = repairZodInputWithDefaults(mangaReaderPresetSchema, data, (path) =>
+        path[0] === "data"
+            ? getValueFromDeepObject(defaultMangaReaderSettings, path.slice(1))
+            : getValueFromDeepObject(mangaPresetTopDefaults, path),
+    );
     return r.success ? r.data : null;
 };
 
@@ -133,8 +194,24 @@ export const parseMangaPreset = (data: unknown): MangaReaderPreset | null => {
  * Parses a single preset from clipboard. Returns null if invalid.
  */
 export const parseBookPreset = (data: unknown): BookReaderPreset | null => {
-    const r = bookReaderPresetSchema.safeParse(data);
+    const r = repairZodInputWithDefaults(bookReaderPresetSchema, data, (path) =>
+        path[0] === "data"
+            ? getValueFromDeepObject(defaultBookReaderSettings, path.slice(1))
+            : getValueFromDeepObject(bookPresetTopDefaults, path),
+    );
     return r.success ? r.data : null;
+};
+
+/**
+ * Normalizes one preset object from storage or import; returns null if type is unknown or repair fails.
+ */
+export const normalizeReaderPreset = (raw: unknown): ReaderPreset | null => {
+    if (!raw || typeof raw !== "object") return null;
+    const t = (raw as { type?: string }).type;
+    if (t === "manga") return parseMangaPreset(raw);
+    if (t === "book") return parseBookPreset(raw);
+    window.logger.warn("readerPresets: skip preset with unknown type:", t);
+    return null;
 };
 
 /**
@@ -143,35 +220,44 @@ export const parseBookPreset = (data: unknown): BookReaderPreset | null => {
  */
 export const parsePresetImport = (data: unknown): ReaderPreset[] => {
     const arr = Array.isArray(data) ? data : ((data as { presets?: unknown[] })?.presets ?? []);
-    return arr
-        .map((p) => readerPresetSchema.safeParse(p))
-        .filter((r): r is z.SafeParseSuccess<ReaderPreset> => r.success)
-        .map((r) => r.data);
+    return arr.map((p) => normalizeReaderPreset(p)).filter((p): p is ReaderPreset => p !== null);
 };
 
 /**
- * @returns true if preset id is a default manga preset
+ * Parses persisted reader-presets JSON. Fast path when valid; otherwise fills missing/invalid fields from defaults
+ * (same mechanism as `parseAppSettings` via `repairZodInputWithDefaults`); `didNormalize` signals callers to persist.
  */
-export const isDefaultMangaPresetById = (id: string): boolean =>
-    initReaderPresets.presets.some((p) => p.type === "manga" && p.id === id);
-
-/**
- * Parses file data into validated ReaderPresetsState. Returns initReaderPresets if invalid.
- */
-export const parseReaderPresetsState = (data: unknown): ReaderPresetsState => {
+export const parseReaderPresetsStateWithMeta = (
+    data: unknown,
+): { state: ReaderPresetsState; didNormalize: boolean } => {
     if (data == null || (typeof data === "object" && !("presets" in data) && !Array.isArray(data))) {
-        return initReaderPresets;
+        return { state: initReaderPresets, didNormalize: true };
     }
-    const r = readerPresetsStateSchema.safeParse(data);
-    if (!r.success) {
-        window.logger.warn("readerPresets schema validation failed, using defaults:", r.error.message);
-        return initReaderPresets;
-    }
-    return r.data;
-};
+    const rawWrapper: Record<string, unknown> = Array.isArray(data)
+        ? { presets: data }
+        : typeof data === "object" && data !== null
+          ? { ...(data as object) }
+          : {};
 
-/**
- * @returns true if preset id is a default book preset
- */
-export const isDefaultBookPresetById = (id: string): boolean =>
-    initReaderPresets.presets.some((p) => p.type === "book" && p.id === id);
+    console.log(Date.now(), "parseReaderPresetsStateWithMeta");
+    const parsed = readerPresetsStateSchema.safeParse(rawWrapper);
+    if (parsed.success) {
+        if (parsed.data.presets.length === 0) {
+            return { state: initReaderPresets, didNormalize: true };
+        }
+        return { state: parsed.data, didNormalize: false };
+    }
+
+    window.logger.warn("readerPresets: validation failed; repairing with defaults", parsed.error.message);
+    const repaired = repairZodInputWithDefaults(readerPresetsStateSchema, rawWrapper, (path, fixed) =>
+        getDefaultForReaderPresetsPath(fixed, path),
+    );
+    if (!repaired.success) {
+        window.logger.warn("readerPresets: could not repair state, using bundled defaults");
+        return { state: initReaderPresets, didNormalize: true };
+    }
+    if (repaired.data.presets.length === 0) {
+        return { state: initReaderPresets, didNormalize: true };
+    }
+    return { state: repaired.data, didNormalize: true };
+};

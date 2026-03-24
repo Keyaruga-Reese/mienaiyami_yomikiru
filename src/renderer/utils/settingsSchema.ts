@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { dialogUtils } from "./dialog";
 import { saveJSONfile, settingsPath } from "./file";
+import { getValueFromDeepObject } from "./objectPath";
 import { USER_PRESET_BOOK_ID, USER_PRESET_MANGA_ID } from "./readerPresets";
 import {
     bookReaderSettingsSchema,
@@ -8,6 +9,7 @@ import {
     defaultMangaReaderSettings,
     mangaReaderSettingsSchema,
 } from "./readerSettingsSchema";
+import { repairZodInputWithDefaults } from "./zodRepair";
 
 const sortTypeEnum = z.union([z.literal("normal"), z.literal("inverse")]);
 const sortByEnum = z.union([z.literal("name"), z.literal("date")]);
@@ -123,62 +125,30 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
         return defaultSettings;
     }
 
-    const getValueFromDeepObject = (obj: any, keys: (string | number)[]) => {
-        let result = obj;
-        for (const key of keys) {
-            if (result && Object.hasOwn(result, key)) {
-                result = result[key];
-            } else {
-                return undefined; // Key doesn't exist in the object
-            }
-        }
-        return result;
-    };
-    const setValueFromDeepObject = (obj: any, keys: (string | number)[], value: any) => {
-        let main = obj;
-        let i: number;
-        for (i = 0; i < keys.length - 1; i++) {
-            main = main[keys[i]];
-        }
-        main[keys[i]] = value;
-    };
-
     try {
         const parsedJSON = JSON.parse(window.fs.readFileSync(settingsPath, "utf-8"));
-        const ers = parsedJSON?.epubReaderSettings;
-        if (ers?.backgroundImageLayer !== undefined) {
-            ers.backgroundImage = {
-                ...(typeof ers.backgroundImage === "object" ? ers.backgroundImage : {}),
-                enabled: ers.backgroundImage?.enabled ?? false,
-                path: ers.backgroundImage?.path ?? "",
-                dimIntensity: ers.backgroundImageDimIntensity ?? 0,
-                brightness: ers.backgroundImageBrightness ?? 100,
-                contrast: ers.backgroundImageContrast ?? 100,
-                layer: ers.backgroundImageLayer ?? { enabled: true, color: "#000000", opacity: 0.8 },
-                paddingInline: ers.backgroundPaddingInline ?? 0,
-            };
-            delete ers.backgroundImageLayer;
-            delete ers.backgroundImageDimIntensity;
-            delete ers.backgroundImageBrightness;
-            delete ers.backgroundImageContrast;
-            delete ers.backgroundPaddingInline;
+        const first = settingSchema.safeParse(parsedJSON);
+        if (first.success) return first.data;
+
+        window.logger.log(
+            "appSettings invalid at :",
+            first.error.issues.map((e) => e.path.join(".")),
+        );
+
+        const repaired = repairZodInputWithDefaults(settingSchema, parsedJSON, (path) =>
+            getValueFromDeepObject(defaultSettings, path),
+        );
+        if (!repaired.success) {
+            window.logger.error("appSettings repair failed");
+            dialogUtils.customError({ message: "Unable to parse settings.json. Remaking." });
+            makeSettingsJson();
+            return defaultSettings;
         }
-        return settingSchema
-            .catch(({ error, input }) => {
-                const location = [] as string[];
-                const fixed = { ...input };
-                error.issues.forEach((e) => {
-                    location.push(e.path.join("."));
-                    setValueFromDeepObject(fixed, e.path, getValueFromDeepObject(defaultSettings, e.path));
-                });
-                dialogUtils.warn({
-                    message: `Some settings are invalid or new settings added. Re-writing settings.`,
-                });
-                window.logger.log("appSettings invalid at :", location);
-                saveJSONfile(settingsPath, fixed);
-                return fixed as z.infer<typeof settingSchema>;
-            })
-            .parse(parsedJSON);
+        dialogUtils.warn({
+            message: `Some settings are invalid or new settings added. Re-writing settings.`,
+        });
+        saveJSONfile(settingsPath, repaired.data);
+        return repaired.data;
     } catch (err) {
         window.logger.error(err);
         window.logger.log(window.fs.readFileSync(settingsPath, "utf-8"));

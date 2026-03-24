@@ -6,12 +6,12 @@ import {
     addMangaPresets,
     deleteReaderPresetWithFallback,
     movePreset,
-    resetToDefaults,
+    resetReaderPresetsToDefaults,
     selectReaderPreset,
 } from "@store/readerPresets";
 import { dialogUtils } from "@utils/dialog";
 import type { BookReaderPreset, MangaReaderPreset } from "@utils/readerPresets";
-import { parsePresetImport } from "@utils/readerPresets";
+import { isUserPresetId, parsePresetImport } from "@utils/readerPresets";
 import { useSettingsContext } from "../Settings";
 
 type PresetActionsRowProps = {
@@ -71,6 +71,8 @@ const PresetActionsRow = ({ type, title }: PresetActionsRowProps) => {
                             </button>
                             {presets.length > 1 && (
                                 <button
+                                    // added disable to prevent UI structure breaking
+                                    disabled={isUserPresetId(preset.id)}
                                     onClick={() => {
                                         dialogUtils
                                             .confirm({ message: "Delete preset?", noOption: false })
@@ -229,7 +231,7 @@ const GeneralReaderPresetsSettings: React.FC = () => {
                                     noOption: false,
                                 })
                                 .then((res) => {
-                                    if (res.response === 0) dispatch(resetToDefaults());
+                                    if (res.response === 0) dispatch(resetReaderPresetsToDefaults());
                                 });
                         }}
                     >

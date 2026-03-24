@@ -5,12 +5,14 @@ import {
     type BookReaderPreset,
     buildFirstRunPresets,
     initReaderPresets,
+    isUserPresetId,
     type MangaReaderPreset,
-    parseReaderPresetsState,
+    parseReaderPresetsStateWithMeta,
     type ReaderPresetsState,
     USER_PRESET_BOOK_ID,
     USER_PRESET_MANGA_ID,
 } from "../utils/readerPresets";
+import type { BookReaderSettings, MangaReaderSettings } from "../utils/readerSettingsSchema";
 import { parseAppSettings } from "../utils/settingsSchema";
 import { setAppSettings, setEpubReaderSettings, setReaderSettings } from "./appSettings";
 import type { AppDispatch, RootState } from "./index";
@@ -21,10 +23,24 @@ let initialState: ReaderPresetsState = initReaderPresets;
 if (window.fs.existsSync(readerPresetsPath)) {
     try {
         const raw = window.fs.readFileSync(readerPresetsPath, "utf8");
-        initialState = parseReaderPresetsState(raw ? (JSON.parse(raw) as unknown) : null);
+        const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+        const { state, didNormalize } = parseReaderPresetsStateWithMeta(parsed);
+        initialState = state;
+        if (didNormalize) {
+            saveJSONfile(readerPresetsPath, state);
+            dialogUtils.warn({
+                message: "Some reader preset fields were missing or invalid; filled from defaults.",
+            });
+        }
     } catch (err) {
         window.logger.error("readerPresets parse error:", err);
-        saveJSONfile(readerPresetsPath, initReaderPresets);
+        const appSettings = parseAppSettings();
+        const firstRun = buildFirstRunPresets(appSettings.readerSettings, appSettings.epubReaderSettings);
+        saveJSONfile(readerPresetsPath, firstRun);
+        initialState = firstRun;
+        dialogUtils.warn({
+            message: "Reader presets file was unreadable; recreated presets from your current reader settings.",
+        });
     }
 } else {
     const appSettings = parseAppSettings();
@@ -94,6 +110,10 @@ const readerPresets = createSlice({
          * NOTE: prefer using deleteReaderPresetWithFallback instead.
          */
         deleteMangaPreset: (state, action: PayloadAction<string>) => {
+            if (action.payload === USER_PRESET_MANGA_ID) {
+                dialogUtils.warn({ message: "Cannot delete the User preset." });
+                return;
+            }
             let mangaCount = 0;
             let deleteIdx = -1;
             for (let i = 0; i < state.presets.length; ++i) {
@@ -117,6 +137,10 @@ const readerPresets = createSlice({
          * NOTE: prefer using deleteReaderPresetWithFallback instead.
          */
         deleteBookPreset: (state, action: PayloadAction<string>) => {
+            if (action.payload === USER_PRESET_BOOK_ID) {
+                dialogUtils.warn({ message: "Cannot delete the User preset." });
+                return;
+            }
             let bookCount = 0;
             let deleteIdx = -1;
             for (let i = 0; i < state.presets.length; ++i) {
@@ -136,7 +160,15 @@ const readerPresets = createSlice({
                 saveReaderPresets(state);
             }
         },
-        resetToDefaults: (state) => {
+        /**
+         * Restores bundled default presets to their shipped definitions and ensures User presets exist (created from
+         * payload when missing). Custom presets are left unchanged.
+         */
+        resetToDefaults: (
+            state,
+            action: PayloadAction<{ mangaData: MangaReaderSettings; bookData: BookReaderSettings }>,
+        ) => {
+            const { mangaData, bookData } = action.payload;
             const existingIds = new Set(state.presets.map((p) => p.id));
             initReaderPresets.presets.forEach((p) => {
                 if (!existingIds.has(p.id)) {
@@ -147,6 +179,16 @@ const readerPresets = createSlice({
                     if (idx >= 0) state.presets[idx] = p;
                 }
             });
+            const userPresetsFromFirstRun = buildFirstRunPresets(mangaData, bookData).presets.filter(
+                (p) => p.id === USER_PRESET_MANGA_ID || p.id === USER_PRESET_BOOK_ID,
+            );
+            for (const p of userPresetsFromFirstRun) {
+                if (!existingIds.has(p.id)) {
+                    state.presets.push(p);
+                    existingIds.add(p.id);
+                    window.logger.log("resetToDefaults: added missing User preset", p.type, p.id);
+                }
+            }
             saveReaderPresets(state);
         },
         /**
@@ -181,7 +223,9 @@ const readerPresets = createSlice({
         refreshReaderPresets: (state) => {
             try {
                 const data = JSON.parse(window.fs.readFileSync(readerPresetsPath, "utf8")) as unknown;
-                return parseReaderPresetsState(data);
+                const { state: next, didNormalize } = parseReaderPresetsStateWithMeta(data);
+                if (didNormalize) saveJSONfile(readerPresetsPath, next);
+                return next;
             } catch {
                 window.logger.error("Unable to refresh readerPresets");
                 return state;
@@ -262,6 +306,21 @@ export const selectPresetSlot =
     };
 
 /**
+ * Resets bundled default presets and creates missing User presets using current app reader settings (same as first run).
+ */
+export const resetReaderPresetsToDefaults =
+    () =>
+    (dispatch: AppDispatch, getState: () => RootState): void => {
+        const { readerSettings, epubReaderSettings } = getState().appSettings;
+        dispatch(
+            resetToDefaults({
+                mangaData: readerSettings,
+                bookData: epubReaderSettings,
+            }),
+        );
+    };
+
+/**
  * Applies reader preset by id to reader settings and sets it as selected.
  */
 export const selectReaderPreset =
@@ -287,6 +346,10 @@ export const selectReaderPreset =
 export const deleteReaderPresetWithFallback =
     (id: string) =>
     (dispatch: AppDispatch, getState: () => RootState): void => {
+        if (isUserPresetId(id)) {
+            dialogUtils.warn({ message: "Cannot delete the User preset." });
+            return;
+        }
         const state = getState();
         const preset = state.readerPresets.presets.find((p) => p.id === id);
         const presetType = preset?.type;
