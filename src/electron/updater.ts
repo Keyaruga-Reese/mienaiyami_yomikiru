@@ -303,6 +303,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
         });
 
     let downloadItem: Electron.DownloadItem | null = null;
+    let isClosingDownloadWindowProgrammatically = false;
     if (newWindow) {
         newWindow.loadURL(DOWNLOAD_PROGRESS_WEBPACK_ENTRY);
         newWindow.setMenuBarVisibility(false);
@@ -310,7 +311,10 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
             newWindow.webContents.send("version", latestVersion);
         });
         newWindow.on("close", () => {
-            logger.log("Download window closed, canceling update download...");
+            if (isClosingDownloadWindowProgrammatically) {
+                return;
+            }
+            logger.log("Download window closed by user, canceling update download...");
             downloadItem?.cancel();
         });
     }
@@ -323,7 +327,10 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
     let performInstallNow: (() => void) | null = null;
 
     const promptInstall = () => {
-        if (newWindow instanceof BrowserWindow) newWindow.close();
+        if (newWindow instanceof BrowserWindow) {
+            isClosingDownloadWindowProgrammatically = true;
+            newWindow.close();
+        }
 
         const showMainPrompt = () => {
             const buttons = ["Install Now", "Install on Quit"];
@@ -514,82 +521,67 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                 });
             }
         } else if (process.platform === "linux") {
-            const installDeb = (filePath: string) => {
-                dialog
-                    .showMessageBox(window, {
-                        type: "info",
-                        title: "Updates downloaded",
-                        message: "Updates downloaded.",
-                        buttons: ["Install Now", "Install on Quit"],
-                        cancelId: 1,
-                    })
-                    .then((res) => {
-                        if (res.response === 0) {
-                            execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                                if (err) throw err;
-                                logger.log("Installing updates...");
-                            });
-                        } else {
-                            app.on("before-quit", () => {
-                                execSudo(`dpkg -i "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                                    dialog.showMessageBox({
-                                        message: "Installing updates.",
-                                        type: "info",
-                                        title: "Yomikiru",
-                                    });
-                                    if (err) throw err;
-                                    logger.log("Installing updates...");
-                                });
-                            });
+            /**
+             * Installs a Linux package via sudo prompt.
+             * Note: we avoid throwing inside callbacks to prevent crashing the app.
+             */
+            const installWithSudo = (command: string): Promise<void> =>
+                new Promise((resolve, reject) => {
+                    logger.log("Linux update install command (sudo):", command);
+                    execSudo(command, { name: "Yomikiru" }, (err) => {
+                        if (err) {
+                            logger.error("Linux update install failed:", err);
+                            reject(err);
+                            return;
                         }
+                        logger.log("Linux update install completed.");
+                        resolve();
                     });
+                });
+
+            const relaunchAndQuit = () => {
+                logger.log("Relaunching app after update install...");
+                app.relaunch();
+                app.quit();
             };
 
-            const installArch = (filePath: string) => {
-                const dir = path.dirname(filePath);
-                dialog
-                    .showMessageBox(window, {
-                        type: "info",
-                        title: "Updates downloaded",
-                        message: "Updates downloaded.",
-                        detail: "Install Now uses sudo. Use Install Manually if you prefer to run pacman yourself.",
-                        buttons: ["Install Now", "Install on Quit", "Install Manually (show folder)"],
-                        cancelId: 2,
-                    })
-                    .then((res) => {
-                        const doInstall = () => {
-                            execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                                if (err) throw err;
-                                logger.log("Installing updates...");
-                            });
-                        };
-                        if (res.response === 0) {
-                            doInstall();
-                        } else if (res.response === 1) {
-                            app.on("before-quit", () => {
-                                execSudo(`pacman -U --noconfirm "${filePath}"`, { name: "Yomikiru" }, (err) => {
-                                    dialog.showMessageBox({
-                                        message: "Installing updates.",
-                                        type: "info",
-                                        title: "Yomikiru",
-                                    });
-                                    if (err) throw err;
-                                    logger.log("Installing updates...");
-                                });
-                            });
-                        } else {
-                            shell.openPath(dir);
-                        }
-                    });
+            const showInstallError = (err: unknown) => {
+                dialog.showMessageBox(window, {
+                    type: "error",
+                    title: "Update Installation Failed",
+                    message: "Failed to install the update.",
+                    detail: err instanceof Error ? err.message : String(err),
+                    buttons: ["OK"],
+                });
             };
 
             const afterDownload = (file: { filename: string; path: string }) => {
                 logger.log(`Update package downloaded: ${file.filename}`);
-                if (isArchLinux()) {
-                    installArch(file.path);
-                } else {
-                    installDeb(file.path);
+                if (newWindow instanceof BrowserWindow) {
+                    isClosingDownloadWindowProgrammatically = true;
+                    newWindow.close();
                 }
+
+                const cmd = isArchLinux() ? `pacman -U --noconfirm "${file.path}"` : `dpkg -i "${file.path}"`;
+                setupInstallOnQuit = () => {
+                    app.once("before-quit", () => {
+                        void installWithSudo(cmd).catch(showInstallError);
+                    });
+                    logger.log(`Will install updates on quit (linux/${isArchLinux() ? "arch" : "deb"}).`);
+                };
+                performInstallNow = () => {
+                    void (async () => {
+                        try {
+                            await installWithSudo(cmd);
+                            relaunchAndQuit();
+                        } catch (err) {
+                            showInstallError(err);
+                        }
+                    })();
+                };
+
+                logger.log("Linux updates ready. Waiting for user choice.");
+                promptInstall();
             };
 
             downloadFile(dl, webContents, afterDownload);
