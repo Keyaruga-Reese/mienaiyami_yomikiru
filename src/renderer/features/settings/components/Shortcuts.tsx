@@ -4,9 +4,12 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { removeShortcuts, setShortcuts } from "@store/shortcuts";
 import { dialogUtils } from "@utils/dialog";
 import { keyFormatter, mouseEventFormatter, SHORTCUT_COMMAND_MAP } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import type { ReactElement } from "react";
 import { useSettingsContext } from "../Settings";
 import { reservedKeys, SHORTCUT_LIMIT } from "../utils/constants";
+
+const log = createRendererLogger("settings/Shortcuts");
 
 const ShortcutInput = ({ command }: { command: ShortcutCommands }) => {
     const shortcuts = useAppSelector((store) => store.shortcuts);
@@ -19,13 +22,13 @@ const ShortcutInput = ({ command }: { command: ShortcutCommands }) => {
         if (dupIndex >= 0) {
             const name =
                 SHORTCUT_COMMAND_MAP.find((s) => s.command === shortcuts[dupIndex].command)?.name || command;
-            window.logger.warn(`"${newKey}" already bound to "${shortcuts[dupIndex].command}"`);
+            log.warn(`"${newKey}" already bound to "${shortcuts[dupIndex].command}"`);
             dialogUtils.warn({ message: `"${newKey}" already bound to "${name}".` });
             return;
         }
         if (reservedKeys.includes(newKey)) {
             dialogUtils.warn({ message: "Can't use reserved key combination." });
-            window.logger.warn(`"${newKey}" is reserved key combination.`);
+            log.warn(`"${newKey}" is reserved key combination.`);
             inputRef?.focus();
             return;
         }

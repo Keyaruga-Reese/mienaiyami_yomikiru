@@ -1,4 +1,7 @@
 import { colorUtils } from "./color";
+import { createRendererLogger } from "./logger";
+
+const log = createRendererLogger("utils/highlight");
 
 export type HighlightRange = {
     startPath: string;
@@ -140,17 +143,18 @@ export const highlightUtils = {
                             const fragment = nodeRange.extractContents();
                             span.appendChild(fragment);
                             nodeRange.insertNode(span);
-                            console.warn("Failed to highlight text node:", _e);
+
+                            log.warn("surroundContents failed, used extract/insert fallback", _e);
                         }
                     } catch (e) {
-                        console.warn("Failed to highlight text node:", e);
+                        log.warn("could not wrap range in span", e);
                     }
                 }
             });
 
             return true;
         } catch (error) {
-            console.error("Failed to highlight:", error);
+            log.error("range application failed", error);
             return false;
         }
     },

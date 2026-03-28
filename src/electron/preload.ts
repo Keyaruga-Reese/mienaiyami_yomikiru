@@ -7,6 +7,7 @@ import { app, clipboard, getCurrentWindow, nativeImage } from "@electron/remote"
 import * as chokidar from "chokidar";
 import { contextBridge, ipcRenderer, shell, webFrame } from "electron";
 import { getFonts } from "font-list";
+import { createRendererLogSink, setupPreloadLogging } from "./util/logger";
 
 type FunctionLess<T> = {
     [K in keyof T as T[K] extends () => any ? never : K]: T[K];
@@ -202,8 +203,9 @@ contextBridge.exposeInMainWorld("electron", electronAPI);
 contextBridge.exposeInMainWorld("chokidar", chokidarAPI);
 contextBridge.exposeInMainWorld("process", processObj);
 contextBridge.exposeInMainWorld("getFonts", getFonts);
-//todo temp only
-contextBridge.exposeInMainWorld("logger", console);
+setupPreloadLogging(() => app.getPath("userData"));
+contextBridge.exposeInMainWorld("logger", createRendererLogSink("app"));
+contextBridge.exposeInMainWorld("createRendererLogSink", createRendererLogSink);
 
 declare global {
     interface Window {
@@ -212,7 +214,8 @@ declare global {
         electron: typeof electronAPI;
         chokidar: typeof chokidarAPI;
         process: typeof processObj;
-        logger: typeof console;
         getFonts: typeof getFonts;
+        logger: ReturnType<typeof createRendererLogSink>;
+        createRendererLogSink: typeof createRendererLogSink;
     }
 }

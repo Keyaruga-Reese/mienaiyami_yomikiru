@@ -1,4 +1,7 @@
 import Colorjs from "color";
+import { createRendererLogger } from "./logger";
+
+const log = createRendererLogger("utils/color");
 
 type ColorUtils = {
     new: (...args: Parameters<typeof Colorjs>) => Colorjs;
@@ -46,7 +49,7 @@ export const colorUtils: ColorUtils = {
                 }
                 break;
             }
-            if (clr === "") window.logger.error("THEME::varToColor: color not found.");
+            if (clr === "") log.error(`varToColor: unresolved CSS variable chain for "${variableStr}"`);
             return this.new(clr);
         }
     },

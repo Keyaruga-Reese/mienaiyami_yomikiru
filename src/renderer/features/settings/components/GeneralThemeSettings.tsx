@@ -3,8 +3,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { addThemes, deleteTheme, newTheme, setTheme } from "@store/themes";
 import { dialogUtils } from "@utils/dialog";
+import { createRendererLogger } from "@utils/logger";
 import { initThemeData } from "@utils/theme";
 import { useSettingsContext } from "../Settings";
+
+const log = createRendererLogger("settings/GeneralThemeSettings");
+
 import { TAB_INFO } from "../utils/constants";
 
 const GeneralThemeSettings: React.FC = () => {
@@ -124,7 +128,7 @@ const GeneralThemeSettings: React.FC = () => {
                                                 dataToAdd.push(e);
                                                 importedCount++;
                                             }
-                                        } else window.logger.warn("IMPORTING THEMES: Invalid data at index", i);
+                                        } else log.warn(`Theme import: skipped invalid row at index ${i}`);
                                     });
                                 } else {
                                     dialogUtils.customError({
@@ -147,7 +151,7 @@ const GeneralThemeSettings: React.FC = () => {
                                             dataToAdd.push(e);
                                             importedCount++;
                                         }
-                                    } else window.logger.warn("IMPORTING THEMES: Invalid data at index", i);
+                                    } else log.warn(`Theme import: skipped invalid row at index ${i}`);
                                 });
                             dialogUtils.confirm({
                                 title: "Imported",
@@ -203,7 +207,7 @@ const GeneralThemeSettings: React.FC = () => {
                                             });
                                     }
                                 } catch (reason) {
-                                    window.logger.error(reason);
+                                    log.error("Theme import: file read or parse failed", reason);
                                     dialogUtils.customError({
                                         title: "Failed",
                                         message: `Invalid theme data. Please note that data must be similar to the result of "Copy Current Theme to Clipboard"`,

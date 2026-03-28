@@ -1,7 +1,10 @@
 import path from "node:path";
 import type { BrowserWindow } from "electron";
 import { app, Menu, nativeImage, Tray } from "electron";
-import { log } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("TrayManager");
+
 import { MainSettings } from "./mainSettings";
 import { WindowManager } from "./window";
 
@@ -12,7 +15,7 @@ export class TrayManager {
     private static lastFocusedWindow: BrowserWindow | null = null;
 
     private constructor() {
-        console.error("This class should not be instantiated.");
+        logger.error("TrayManager must not be instantiated (static API only)");
     }
 
     private static createTray(): void {
@@ -113,7 +116,7 @@ export class TrayManager {
             w.hide();
         }
         TrayManager.refreshMenu();
-        log.log(`Tray: hid ${windows.length} window(s) from context menu`);
+        logger.log(`Tray menu 'Hide all': minimized ${windows.length} window(s) to tray`);
     }
 
     /**
@@ -129,7 +132,7 @@ export class TrayManager {
             }
             only.hide();
             TrayManager.refreshMenu();
-            log.log("Tray: hid single window via tray icon click");
+            logger.log("Tray icon click: minimized focused window to tray");
             return;
         }
         const hidden = windows.filter((w) => !w.isVisible());
@@ -158,7 +161,7 @@ export class TrayManager {
     static initialize(): void {
         if (MainSettings.settings.minimizeToTray) {
             TrayManager.createTray();
-            log.log("Tray: initialized (minimizeToTray enabled)");
+            logger.log("System tray ready (minimize-to-tray enabled)");
         }
     }
 

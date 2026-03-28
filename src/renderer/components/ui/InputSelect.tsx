@@ -1,8 +1,11 @@
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
 import { useLayoutEffect, useState } from "react";
 import { useAppContext } from "../../App";
+
+const log = createRendererLogger("components/ui/InputSelect");
 
 // todo: replace with radix ui
 
@@ -40,7 +43,7 @@ const InputSelect: React.FC<{
         if (aa) {
             setBtnLabel(aa.label);
         } else {
-            window.logger.error("InputSelect::value: value not found in options.");
+            log.error(`value "${value}" not in options list`);
         }
         // }
     }, [value, options]);

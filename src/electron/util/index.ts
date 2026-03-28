@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { app, BrowserWindow } from "electron";
-import _log from "electron-log";
+import { createMainLogger, setupMainProcessLogging } from "./logger";
 
 export const IS_PORTABLE =
     app.isPackaged &&
@@ -16,10 +16,11 @@ if (IS_PORTABLE) {
     app.setPath("userData", folderPath);
 }
 
-// change path in `settings.tsx as well if changing log path
-_log.transports.file.resolvePath = () => path.join(app.getPath("userData"), "logs/main.log");
+// change path in `settings.tsx` as well if changing log path
+//! This needs to be called after new `userData` is set
+setupMainProcessLogging(() => app.getPath("userData"));
 
-export const log = _log;
+const saveFileLogger = createMainLogger("util/saveFile");
 
 export const saveFile = (path: string, data: string, sync = true, retry = 3): void => {
     try {
@@ -32,7 +33,7 @@ export const saveFile = (path: string, data: string, sync = true, retry = 3): vo
                 }
             });
     } catch (err) {
-        log.error("electron:util:saveFile:", err, "Retrying...,", retry - 1, "left");
+        saveFileLogger.error(`Failed to write "${path}" (${retry - 1} retries left)`, err);
         if (retry > 0)
             setTimeout(() => {
                 saveFile(path, data, sync, retry - 1);

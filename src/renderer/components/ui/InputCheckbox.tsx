@@ -1,4 +1,7 @@
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
+
+const log = createRendererLogger("components/ui/InputCheckbox");
 
 const InputCheckbox = ({
     onChange,
@@ -21,7 +24,7 @@ const InputCheckbox = ({
     disabled?: boolean;
     title?: string;
 }) => {
-    if (!labelAfter && !paraAfter) console.error("Element must have either label or para.");
+    if (!labelAfter && !paraAfter) log.error("needs labelAfter or paraAfter");
     return (
         <label
             title={title}

@@ -39,6 +39,9 @@ import {
     shortcutsPath,
     themesPath,
 } from "./utils/file";
+import { createRendererLogger } from "./utils/logger";
+
+const log = createRendererLogger("App");
 
 interface AppContext {
     pageNumberInputRef: React.RefObject<HTMLInputElement>;
@@ -114,11 +117,11 @@ const App = (): ReactElement => {
                 .access(deleteDir)
                 .then(() => {
                     window.fs.rm(deleteDir, { recursive: true }).catch((err) => {
-                        console.error("Error while deleting directory", err);
+                        log.error(`closeReader: could not delete temp dir "${deleteDir}"`, err);
                     });
                 })
                 .catch((err) => {
-                    console.error("Error while deleting directory", err);
+                    log.error(`closeReader: temp dir not accessible for delete "${deleteDir}"`, err);
                 });
 
         document.body.classList.remove("zenMode");
@@ -146,7 +149,7 @@ const App = (): ReactElement => {
         const elem = document.head.querySelector("#customStylesheet");
         if (appSettings.customStylesheet && !elem) {
             window.fs.access(appSettings.customStylesheet).then(() => {
-                window.logger.log("Loading custom stylesheet from ", appSettings.customStylesheet);
+                log.log(`Applying user customStylesheet: ${appSettings.customStylesheet}`);
                 const stylesheet = document.createElement("link");
                 stylesheet.rel = "stylesheet";
                 stylesheet.href = appSettings.customStylesheet;
@@ -154,7 +157,7 @@ const App = (): ReactElement => {
                 document.head.appendChild(stylesheet);
             });
         } else if (elem) {
-            window.logger.log("Removing custom stylesheet.");
+            log.log("Removing user customStylesheet link from document head");
             document.head.removeChild(elem);
         }
     }, [appSettings.customStylesheet]);
@@ -193,7 +196,7 @@ const App = (): ReactElement => {
                 dispatch(setMainSettings(settings));
             }),
             window.electron.on("fs:fileChanged", ({ filePath }) => {
-                // window.logger.log("fs:fileChanged sync", filePath, sourceWindowId);
+                // log.log("fs:fileChanged sync", filePath, sourceWindowId);
                 if (filePath === settingsPath && appSettings.syncSettings) dispatch(refreshAppSettings());
                 if (filePath === shortcutsPath && appSettings.syncSettings) dispatch(refreshShortcuts());
                 if (filePath === themesPath && appSettings.syncThemes) dispatch(refreshThemes());
@@ -548,7 +551,7 @@ const App = (): ReactElement => {
                         }
                     }
                 } catch (err) {
-                    console.error("Error while dropping file", err);
+                    log.error("Drop handler: failed to open dropped path", err);
                     dialogUtils.customError({
                         message: "Error while dropping file",
                         detail: err instanceof Error ? err.message : String(err),

@@ -2,8 +2,11 @@ import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import { colorUtils } from "@utils/color";
 import { dialogUtils } from "@utils/dialog";
 import { saveJSONfile, themesPath } from "../utils/file";
+import { createRendererLogger } from "../utils/logger";
 import { readJsonFileWithRetrySync } from "../utils/readJsonFileWithRetry";
 import { initThemeData, themeProps } from "../utils/theme";
+
+const log = createRendererLogger("store/themes");
 
 export const setSysBtnColor = (blurred = false) => {
     const topbarElem = document.querySelector<HTMLDivElement>("body #topBar");
@@ -67,7 +70,7 @@ if (window.fs.existsSync(themesPath)) {
         const data = readJsonFileWithRetrySync<Themes>(themesPath, {
             maxAttempts: 10,
             onRetry: (attempt, error) => {
-                window.logger.log("themes initial retry:", attempt, error);
+                log.log(`themes.json read retry ${attempt}/10`, error);
             },
         });
         let changed = false;
@@ -81,15 +84,11 @@ if (window.fs.existsSync(themesPath)) {
             (data as Themes).allData.forEach((e) => {
                 if (!e.main[prop as ThemeDataMain]) {
                     if (initThemeData.allData.map((t) => t.name).includes(e.name)) {
-                        window.logger.log(
-                            `"${prop}" does not exist on default theme - "${e.name}", rewriting it whole.`,
-                        );
+                        log.log(`Theme "${e.name}": missing CSS var "${prop}"; replaced block from default theme`);
                         e.main = initThemeData.allData.find((t) => t.name === e.name)!.main;
                         rewriteNeeded = true;
                     } else {
-                        window.logger.log(
-                            `"${prop}" does not exist on theme - "${e.name}", adding it with value "#ff0000".`,
-                        );
+                        log.log(`Theme "${e.name}": missing "${prop}"; filled with placeholder #ff0000`);
                         addedProp.add(`\t"${themeProps[prop as ThemeDataMain]}"`);
                         rewriteNeeded = true;
                         changed = true;
@@ -128,7 +127,7 @@ if (window.fs.existsSync(themesPath)) {
             dialogUtils.customError({
                 message: `Unable to parse ${themesPath}\nMaking new themes.json...\n${err}`,
             });
-        window.logger.error(err);
+        log.error("themes.json invalid; restoring bundled defaults", err);
         initialState.name = initThemeData.name;
         initialState.allData = initThemeData.allData;
         saveJSONfile(themesPath, initThemeData);
@@ -165,10 +164,7 @@ const themes = createSlice({
         },
         newTheme: (state, action: PayloadAction<ThemeData>) => {
             if (state.allData.map((e) => e.name).includes(action.payload.name)) {
-                window.logger.error(
-                    "Tried to add new theme but theme name already exist. Name:",
-                    action.payload.name,
-                );
+                log.error(`add newTheme: name already exists (${action.payload.name})`);
             } else state.allData.push(action.payload);
         },
         refreshThemes: () => {
@@ -176,7 +172,7 @@ const themes = createSlice({
                 return readJsonFileWithRetrySync<Themes>(themesPath, {
                     maxAttempts: 8,
                     onRetry: (attempt, error) => {
-                        window.logger.log("themes refresh retry:", attempt, error);
+                        log.log(`themes.json refresh retry ${attempt}/8`, error);
                     },
                 });
             } catch {
@@ -191,10 +187,7 @@ const themes = createSlice({
                 action.payload.forEach((theme) => {
                     if ("name" in theme) {
                         if (state.allData.map((e) => e.name).includes(theme.name)) {
-                            window.logger.error(
-                                "Tried to add new theme but theme name already exist. Name:",
-                                theme.name,
-                            );
+                            log.error(`addThemes: duplicate name skipped (${theme.name})`);
                         } else state.allData.push(theme);
                     }
                 });

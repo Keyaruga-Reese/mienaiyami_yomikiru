@@ -1,6 +1,9 @@
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { createRendererLogger } from "@utils/logger";
 import { useLayoutEffect, useRef, useState } from "react";
+
+const log = createRendererLogger("components/ui/InputNumber");
 
 const InputNumber = ({
     onChange,
@@ -70,7 +73,7 @@ const InputNumber = ({
     const changeHandler = () => {
         const currentTarget = inputRef.current;
         if (!currentTarget) {
-            console.error("InputNumber: inputRef.current is null");
+            log.error("inputRef is null (DOM not mounted)");
             return;
         }
         if (!currentTarget.value) currentTarget.value = "0";

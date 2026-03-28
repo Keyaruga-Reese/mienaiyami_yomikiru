@@ -1,6 +1,7 @@
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { setSettingsOpen } from "@store/ui";
 import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import {
     createContext,
     type ReactElement,
@@ -18,6 +19,8 @@ import Shortcuts from "./components/Shortcuts";
 import ThemeCont from "./components/ThemeCont";
 import Usage from "./components/Usage";
 import { TAB_INFO } from "./utils/constants";
+
+const log = createRendererLogger("Settings");
 
 type SettingsContext = {
     currentTab: number;
@@ -75,7 +78,7 @@ const Settings = (): ReactElement => {
                 setTimeout(() => {
                     if (elem) elem.style.backgroundColor = color;
                 }, 1000);
-            } else console.error(elementQuery, "not found.");
+            } else log.error(`scroll target not found (${elementQuery})`);
         };
         setTimeout(() => {
             onTimeout();

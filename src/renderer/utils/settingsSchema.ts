@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { dialogUtils } from "./dialog";
 import { saveJSONfile, settingsPath } from "./file";
+import { createRendererLogger } from "./logger";
 import { getValueFromDeepObject } from "./objectPath";
 import { USER_PRESET_BOOK_ID, USER_PRESET_MANGA_ID } from "./readerPresets";
 import {
@@ -11,6 +12,8 @@ import {
 } from "./readerSettingsSchema";
 import { readJsonFileWithRetrySync } from "./readJsonFileWithRetry";
 import { repairZodInputWithDefaults } from "./zodRepair";
+
+const log = createRendererLogger("settingsSchema");
 
 const sortTypeEnum = z.union([z.literal("normal"), z.literal("inverse")]);
 const sortByEnum = z.union([z.literal("name"), z.literal("date")]);
@@ -130,14 +133,14 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
         const parsedJSON = readJsonFileWithRetrySync(settingsPath, {
             maxAttempts: 10,
             onRetry: (attempt, error) => {
-                window.logger.log("parseAppSettings retry:", attempt, error);
+                log.log(`settings.json read retry ${attempt}/10`, error);
             },
         });
         const first = settingSchema.safeParse(parsedJSON);
         if (first.success) return first.data;
 
-        window.logger.log(
-            "appSettings invalid at :",
+        log.log(
+            "settings.json failed validation; paths with issues:",
             first.error.issues.map((e) => e.path.join(".")),
         );
 
@@ -145,7 +148,7 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
             getValueFromDeepObject(defaultSettings, path),
         );
         if (!repaired.success) {
-            window.logger.error("appSettings repair failed");
+            log.error("settings.json could not be repaired with defaults; remaking file");
             dialogUtils.customError({ message: "Unable to parse settings.json. Remaking." });
             makeSettingsJson();
             return defaultSettings;
@@ -156,7 +159,7 @@ const parseAppSettings = (): z.infer<typeof settingSchema> => {
         saveJSONfile(settingsPath, repaired.data);
         return repaired.data;
     } catch (err) {
-        window.logger.error(err);
+        log.error("settings.json read or parse threw; remaking file", err);
         dialogUtils.customError({ message: "Unable to parse settings.json. Remaking." });
         makeSettingsJson();
         return defaultSettings;

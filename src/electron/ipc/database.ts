@@ -10,12 +10,14 @@ import {
     UpdateBookProgressSchema,
     UpdateMangaProgressSchema,
 } from "@electron/db/validator";
-import { log } from "@electron/util";
+import { createMainLogger } from "@electron/util/logger";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { type DatabaseService, DB_PATH } from "../db";
 import { bookBookmarks, bookNotes, bookProgress, libraryItems, mangaBookmarks, mangaProgress } from "../db/schema";
 import { ipc } from "./utils";
+
+const logger = createMainLogger("ipc/database");
 
 /**
  * Sends database change notifications to all open windows
@@ -35,7 +37,7 @@ export const pingDatabaseChange = async <T extends keyof DatabaseChangeChannels>
                 // This is safe because DatabaseChangeChannels should be part of MainToRendererChannels
                 ipc.send(window.webContents, channel as any);
             } catch (error) {
-                log.error(`Failed to send ${channel} notification to window:`, error);
+                logger.error(`Could not broadcast DB change "${String(channel)}" to a window`, error);
             }
         }
     });
@@ -83,7 +85,7 @@ const handlers: {
             pingDatabaseChange("db:bookNote:change");
             return true;
         } catch (error) {
-            console.error(`Error in IPC channel "db:library:deleteItem":`, error);
+            logger.error('"db:library:deleteItem": delete failed', error);
             return false;
         }
     },
@@ -103,7 +105,7 @@ const handlers: {
             await db.db.delete(libraryItems);
             return true;
         } catch (err) {
-            console.error(`Error in IPC channel "db:library:reset":`, err);
+            logger.error('"db:library:reset": backup or delete failed', err);
             return false;
         }
     },
@@ -228,7 +230,7 @@ export function setupDatabaseHandlers(db: DatabaseService): void {
             try {
                 return await handlers[channel as keyof DatabaseChannels](db, request);
             } catch (error) {
-                console.error(`Error in IPC channel "${channel}":`, error, request);
+                logger.error(`"${channel}": handler threw`, error, "request:", request);
                 return null;
             }
         });

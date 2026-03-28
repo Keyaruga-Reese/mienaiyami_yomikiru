@@ -18,7 +18,11 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { getReaderManga, setReaderState } from "@store/reader";
 import { dialogUtils } from "@utils/dialog";
 import { formatUtils } from "@utils/file";
+import { createRendererLogger } from "@utils/logger";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+
+const log = createRendererLogger("manga/ReaderSideList");
+
 import { shallowEqual } from "react-redux";
 import { useAppContext } from "src/renderer/App";
 import AnilistBar from "../../../anilist/AnilistBar";
@@ -218,7 +222,7 @@ const ReaderSideList = memo(
                                     };
                                 }
                             } catch (err) {
-                                window.logger.error(`Failed to read directory "${filePath}":`, err);
+                                log.error(`readdir failed for "${filePath}"`, err);
                             }
                         } else if (formatUtils.files.test(filePath)) {
                             return {
@@ -231,7 +235,7 @@ const ReaderSideList = memo(
 
                         return null;
                     } catch (err) {
-                        window.logger.error(`Failed to process file "${fileName}":`, err);
+                        log.error(`could not stat or read "${fileName}"`, err);
                         return null;
                     }
                 });
@@ -256,7 +260,7 @@ const ReaderSideList = memo(
                 if (err instanceof Error) {
                     dialogUtils.nodeError(err);
                 } else {
-                    console.error("Failed to read manga directory:", err);
+                    log.error(`chapter list build failed for "${mangaLink}"`, err);
                 }
                 setChapterData([]);
             }

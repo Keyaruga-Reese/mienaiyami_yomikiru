@@ -1,5 +1,6 @@
 import { dialogUtils } from "./dialog";
 import { unzip } from "./file";
+import { createRendererLogger } from "./logger";
 
 export type EPubData = {
     metadata: EPUB.MetaData;
@@ -12,20 +13,22 @@ export type EPubData = {
 
 type ParsedTOC = { ncx: EPUB.NCXTree[]; ncx_depth: number; toc: EPUB.TOC };
 
+const log = createRendererLogger("utils/epub");
+
 export default class EPUB {
     static async extractEpub(
         epubPath: string,
         extractPath: string,
         keepExtractedFiles: boolean,
     ): Promise<boolean> {
-        console.log("EPUB::extractEpub : extracting ", epubPath, " at ", extractPath);
+        log.log(`EPUB extract: "${epubPath}" -> "${extractPath}"`);
         try {
             if (
                 keepExtractedFiles &&
                 window.fs.existsSync(window.path.join(extractPath, "SOURCE")) &&
                 window.fs.readFileSync(window.path.join(extractPath, "SOURCE"), "utf-8") === epubPath
             ) {
-                console.log("EPUB::extractEpub : Found old epub extract.");
+                log.log(`EPUB extract: reusing existing folder for "${epubPath}"`);
                 return true;
             } else {
                 if (!keepExtractedFiles) window.app.deleteDirOnClose = extractPath;
@@ -59,7 +62,7 @@ export default class EPUB {
                     message: "An Error occurred while checking/extracting epub.",
                     detail: err.toString(),
                 });
-            else window.logger.error("An Error occurred while checking/extracting epub:", err);
+            else log.error(`EPUB extract: unexpected failure for "${epubPath}"`, err);
             return false;
         }
         return false;
@@ -156,10 +159,9 @@ export default class EPUB {
                 ?.getAttribute("href");
             // this is full path
             const tocPath = metadata.navId ? manifest.get(metadata.navId)?.href : "";
-            if (!ncxPathRelative)
-                window.logger.warn("parseEpubDir: No ncx file found. Checking for toc.xhtml instead.");
+            if (!ncxPathRelative) log.warn("parseEpubDir: No ncx file found. Checking for toc.xhtml instead.");
             if (!ncxPathRelative && !tocPath)
-                window.logger.error("parseEpubDir: No navId/toc.xhtml found. Sidebar will not be available.");
+                log.error("parseEpubDir: No navId/toc.xhtml found. Sidebar will not be available.");
             let ncx: EPUB.NCXTree[] = [];
             let toc: EPUB.TOC = new Map();
             if (ncxPathRelative) {
@@ -219,7 +221,7 @@ export default class EPUB {
             const nestedList = li.querySelector(":scope > ol");
 
             if (!anchor && !span) {
-                console.error("parseEpubV3TOC: No anchor or span found in list item. Skipping.");
+                log.error("EPUB TOC (nav): list item has no <a> or <span>; skipped one entry");
                 return;
             }
 
@@ -318,11 +320,11 @@ export default class EPUB {
                 const title = navPoint.querySelector(":scope > navLabel > text")?.textContent || "~";
                 const navId = navPoint.getAttribute("id");
                 if (!navId) {
-                    console.error("EPUB::parseEpubDir: No id found in navPoint. Skipping.");
+                    log.error("EPUB NCX: navPoint missing id attribute; skipped");
                     return;
                 }
                 if (!src) {
-                    console.error("EPUB::parseEpubDir: No src found in navPoint. Skipping.");
+                    log.error("EPUB NCX: navPoint missing content@src; skipped");
                     return;
                 }
                 //todo check if need to add check for duplicate starting string in src, like "Text/Text/",
@@ -431,8 +433,8 @@ export default class EPUB {
             const raw = await window.fs.readFile(chapterPath, "utf-8");
             return await EPUB.parseChapter(raw, chapterPath);
         } catch (e) {
-            if (e instanceof Error || typeof e === "string") window.logger.error(e);
-            else window.logger.error("EPUB::readChapter: Error while reading chapter:", e);
+            if (e instanceof Error || typeof e === "string") log.error("EPUB readChapter:", e);
+            else log.error("EPUB readChapter: Error while reading chapter", e);
             return `
             <p>An error occurred while reading epub files. It is possible that temporary files are deleted, try reloading.</p>
             <p>If it does not help then its possible that your epub file is malformed. You can try raising an issue 

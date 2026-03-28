@@ -1,9 +1,3 @@
-// import log from "electron-log";
-// log.transports.file.resolvePath = () =>
-//     window.path.join(window.Electron.app.getPath("userData"), "logs/renderer.log");
-
-// window.logger = log;
-
 export const getCSSPath = (el: Element): string => {
     if (!(el instanceof Element)) return "";
     const path = [] as string[];

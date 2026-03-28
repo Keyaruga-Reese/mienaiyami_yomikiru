@@ -14,7 +14,11 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { app, dialog } from "electron";
-import { dateFromOldDateString, electronOnly, log } from "../util";
+import { dateFromOldDateString, electronOnly } from "../util";
+import { createMainLogger } from "../util/logger";
+
+const logger = createMainLogger("db");
+
 import * as schema from "./schema";
 import { bookBookmarks, bookProgress, libraryItems, mangaBookmarks, mangaProgress } from "./schema";
 
@@ -108,12 +112,8 @@ export class DatabaseService {
     }
 
     async migrateFromJSON(historyData: HistoryItem[], bookmarkData: Manga_BookItem[]): Promise<void> {
-        log.log(
-            "Migrating from JSON " +
-                historyData.length +
-                " history items and " +
-                bookmarkData.length +
-                " bookmark items",
+        logger.log(
+            `JSON->SQLite migration: ${historyData.length} history row(s), ${bookmarkData.length} bookmark row(s)`,
         );
 
         let historySuccess = 0;
@@ -137,7 +137,7 @@ export class DatabaseService {
                         .from(libraryItems)
                         .where(eq(libraryItems.link, parentLink));
                     if (existing) {
-                        log.log("Item already exists", parentLink);
+                        logger.log(`History import skipped (library item already exists): "${parentLink}"`);
                         historySuccess++;
                         continue;
                     }
@@ -180,11 +180,11 @@ export class DatabaseService {
                     }
 
                     historySuccess++;
-                    log.log("Migrated history item", item.data.link);
+                    logger.log(`History row imported: "${item.data.link}"`);
                 } catch (error) {
                     historyFailed++;
                     const errorMsg = error instanceof Error ? error.message : String(error);
-                    log.error("Failed to migrate history item:", item.data?.link || "unknown", errorMsg);
+                    logger.error(`History row failed (${item.data?.link ?? "unknown link"}):`, errorMsg);
                     errors.push({
                         type: "history",
                         item,
@@ -204,8 +204,9 @@ export class DatabaseService {
 
                     let [item] = await tx.select().from(libraryItems).where(eq(libraryItems.link, parentLink));
                     if (!item) {
-                        log.log("Item not found for bookmark", bookmark.data.link);
-                        log.log("Creating new item for bookmark");
+                        logger.log(
+                            `Bookmark import: no library row for "${bookmark.data.link}", creating item first`,
+                        );
 
                         if (bookmark.type === "image") {
                             const title = getTitle(bookmark.data.mangaName, path.basename(parentLink));
@@ -258,11 +259,11 @@ export class DatabaseService {
                     }
 
                     bookmarkSuccess++;
-                    log.log("Migrated bookmark", bookmark.data.link);
+                    logger.log(`Bookmark row imported: "${bookmark.data.link}"`);
                 } catch (error) {
                     bookmarkFailed++;
                     const errorMsg = error instanceof Error ? error.message : String(error);
-                    log.error("Failed to migrate bookmark:", bookmark.data?.link || "unknown", errorMsg);
+                    logger.error(`Bookmark row failed (${bookmark.data?.link ?? "unknown link"}):`, errorMsg);
                     errors.push({
                         type: "bookmark",
                         item: bookmark,
@@ -271,14 +272,14 @@ export class DatabaseService {
                 }
             }
 
-            log.log("Migration Summary:");
-            log.log(`History Items - Success: ${historySuccess}, Failed: ${historyFailed}`);
-            log.log(`Bookmarks - Success: ${bookmarkSuccess}, Failed: ${bookmarkFailed}`);
+            logger.log("Migration Summary:");
+            logger.log(`History Items - Success: ${historySuccess}, Failed: ${historyFailed}`);
+            logger.log(`Bookmarks - Success: ${bookmarkSuccess}, Failed: ${bookmarkFailed}`);
 
             if (errors.length > 0) {
-                log.log("Migration Errors:");
+                logger.log(`Migration failures (first ${errors.length} collected):`);
                 errors.forEach((err, index) => {
-                    log.log(`${index + 1}. ${err.type}: ${err.error} : ${JSON.stringify(err.item)}`);
+                    logger.log(`${index + 1}. [${err.type}] ${err.error}`, err.item);
                 });
                 dialog.showMessageBox({
                     type: "error",
@@ -287,7 +288,7 @@ export class DatabaseService {
                 });
             }
 
-            log.log("Migration complete");
+            logger.log("JSON->SQLite migration finished");
         });
     }
 }

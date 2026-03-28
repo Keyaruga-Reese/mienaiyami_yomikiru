@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createRendererLogger } from "./logger";
 import { getValueFromDeepObject } from "./objectPath";
 import type { BookReaderSettings, MangaReaderSettings } from "./readerSettingsSchema";
 import {
@@ -8,6 +9,8 @@ import {
     mangaReaderSettingsSchema,
 } from "./readerSettingsSchema";
 import { repairZodInputWithDefaults } from "./zodRepair";
+
+const log = createRendererLogger("utils/readerPresets");
 
 export const mangaReaderPresetSchema = z.object({
     id: z.string(),
@@ -210,7 +213,7 @@ export const normalizeReaderPreset = (raw: unknown): ReaderPreset | null => {
     const t = (raw as { type?: string }).type;
     if (t === "manga") return parseMangaPreset(raw);
     if (t === "book") return parseBookPreset(raw);
-    window.logger.warn("readerPresets: skip preset with unknown type:", t);
+    log.warn(`normalizeReaderPreset: dropped entry (unknown type ${String(t)})`);
     return null;
 };
 
@@ -247,12 +250,12 @@ export const parseReaderPresetsStateWithMeta = (
         return { state: parsed.data, didNormalize: false };
     }
 
-    window.logger.warn("readerPresets: validation failed; repairing with defaults", parsed.error.message);
+    log.warn("readerPresets.json: schema mismatch; repairing fields from defaults", parsed.error.message);
     const repaired = repairZodInputWithDefaults(readerPresetsStateSchema, rawWrapper, (path, fixed) =>
         getDefaultForReaderPresetsPath(fixed, path),
     );
     if (!repaired.success) {
-        window.logger.warn("readerPresets: could not repair state, using bundled defaults");
+        log.warn("readerPresets.json: repair failed; loading bundled default presets");
         return { state: initReaderPresets, didNormalize: true };
     }
     if (repaired.data.presets.length === 0) {

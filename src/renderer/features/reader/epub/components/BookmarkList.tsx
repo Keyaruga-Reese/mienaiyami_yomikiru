@@ -5,7 +5,11 @@ import { useAppSelector } from "@store/hooks";
 import { getReaderBook } from "@store/reader";
 import dateUtils from "@utils/date";
 import { dialogUtils } from "@utils/dialog";
+import { createRendererLogger } from "@utils/logger";
 import { useCallback } from "react";
+
+const log = createRendererLogger("epub/BookmarkList");
+
 import { shallowEqual } from "react-redux";
 import { useAppContext } from "src/renderer/App";
 
@@ -32,7 +36,7 @@ const BookmarkList: React.FC<{
                 if (!bookmark) throw new Error("Bookmark not found");
                 openChapterById(bookmark.chapterId, bookmark.position);
             } catch (error) {
-                console.error(error);
+                log.error("navigate to chapter failed", error);
                 dialogUtils.customError({
                     message: "Could not find the chapter for corresponding id.",
                 });

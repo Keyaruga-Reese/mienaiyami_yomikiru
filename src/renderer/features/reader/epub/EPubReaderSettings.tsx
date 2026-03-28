@@ -13,7 +13,11 @@ import InputRange from "@ui/InputRange";
 import InputSelect from "@ui/InputSelect";
 import { colorUtils } from "@utils/color";
 import { keyFormatter } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import { memo, useEffect, useLayoutEffect, useState } from "react";
+
+const log = createRendererLogger("epub/EPubReaderSettings");
+
 import BackgroundSettings from "./components/BackgroundSettings";
 import ContentFrameSettings from "./components/ContentFrameSettings";
 
@@ -55,7 +59,7 @@ const EPUBReaderSettings = memo(
                     setFontList(e);
                 })
                 .catch((e) => {
-                    console.error("unable to get font list: ", e);
+                    log.error("getFonts() failed (system font list unavailable)", e);
                 });
         }, []);
 

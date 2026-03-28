@@ -2,11 +2,14 @@ import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { log, saveFile } from "@electron/util";
+import { saveFile } from "@electron/util";
+import { createMainLogger } from "@electron/util/logger";
 import { WindowManager } from "@electron/util/window";
 import * as crossZip from "cross-zip";
 import { BrowserWindow, dialog } from "electron";
 import { ipc } from "./utils";
+
+const logger = createMainLogger("ipc/fs");
 
 // manual merge from https://github.com/mienaiyami/yomikiru/commit/b1b6acbf18ff4eac5d352d91fafd511223cc8ad0
 /**
@@ -68,7 +71,7 @@ export const registerFSHandlers = (): void => {
                 });
             });
         } catch (error) {
-            log.error("electron:fs:saveFile:", error);
+            logger.error(`"fs:saveFile" failed for "${filePath}"`, error);
         }
     });
     ipc.handle("fs:unzip", async (_event, { source, destination }) => {
@@ -108,7 +111,7 @@ export const registerFSHandlers = (): void => {
                 try {
                     await flattenDirectories(destination);
                 } catch (e) {
-                    log.error("electron:fs:unzip:", e);
+                    logger.error(`"fs:unzip": flattening extracted files failed (archive "${source}")`, e);
                 }
                 await fs.writeFile(path.join(destination, "SOURCE"), source);
                 return { source, destination, ok: true };
@@ -117,13 +120,13 @@ export const registerFSHandlers = (): void => {
                 try {
                     if (path.extname(source).toLowerCase() !== ".epub") await flattenDirectories(destination);
                 } catch (e) {
-                    log.error("electron:fs:unzip:", e);
+                    logger.error(`"fs:unzip": flattening extracted files failed (archive "${source}")`, e);
                 }
                 await fs.writeFile(path.join(destination, "SOURCE"), source);
                 return { source, destination, ok: true };
             }
         } catch (error) {
-            log.error("electron:fs:unzip:", error);
+            logger.error(`"fs:unzip" failed (source "${source}", dest "${destination}")`, error);
             return { ok: false, message: String(error) };
         }
     });

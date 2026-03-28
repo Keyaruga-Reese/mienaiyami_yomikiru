@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import * as remote from "@electron/remote/main";
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions, shell } from "electron";
-import { log } from "./util";
+import { createMainLogger } from "./util/logger";
+
+const logger = createMainLogger("main");
+
 import { getErrorHandler } from "./util/errorHandler";
 
 remote.initialize();
@@ -150,7 +153,7 @@ app.on("ready", async () => {
 });
 
 app.on("before-quit", () => {
-    log.log("Quitting app...");
+    logger.log("Application shutdown (before-quit)");
 });
 app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

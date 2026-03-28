@@ -1,5 +1,8 @@
+import { createRendererLogger } from "@utils/logger";
 import * as css from "css";
 import { memo } from "react";
+
+const log = createRendererLogger("epub/StyleSheets");
 
 const StyleSheets = memo(
     ({ sheets }: { sheets: string[] }) => {
@@ -42,7 +45,7 @@ const StyleSheets = memo(
                                 stylesheet.innerHTML = txt;
                                 node.appendChild(stylesheet);
                             } catch (e) {
-                                window.logger.error("Error occurred while loading stylesheet.", e);
+                                log.error(`failed to load stylesheet "${url}"`, e);
                             }
                         });
                     }

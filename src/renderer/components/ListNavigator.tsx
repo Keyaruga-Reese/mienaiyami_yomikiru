@@ -1,7 +1,11 @@
 import { useAppSelector } from "@store/hooks";
 import { getShortcutsMapped } from "@store/shortcuts";
 import { keyFormatter } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+
+const log = createRendererLogger("components/ListNavigator");
+
 import { shallowEqual } from "react-redux";
 
 type ListNavigatorContextType<T> = {
@@ -216,7 +220,7 @@ function ListNavigatorProviderComponent<T>({
                 setFocused(-1);
                 setFilter(filter);
             } catch (error) {
-                console.error("Error in search processing:", error);
+                log.error("search filter threw", error);
                 setFocused(-1);
 
                 const safeFilter = val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

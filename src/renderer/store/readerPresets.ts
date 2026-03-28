@@ -1,6 +1,7 @@
 import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import { dialogUtils } from "@utils/dialog";
 import { readerPresetsPath, saveJSONfile } from "../utils/file";
+import { createRendererLogger } from "../utils/logger";
 import {
     type BookReaderPreset,
     buildFirstRunPresets,
@@ -14,6 +15,9 @@ import {
 } from "../utils/readerPresets";
 import type { BookReaderSettings, MangaReaderSettings } from "../utils/readerSettingsSchema";
 import { readJsonFileWithRetrySync } from "../utils/readJsonFileWithRetry";
+
+const log = createRendererLogger("store/readerPresets");
+
 import { parseAppSettings } from "../utils/settingsSchema";
 import { setAppSettings, setEpubReaderSettings, setReaderSettings } from "./appSettings";
 import type { AppDispatch, RootState } from "./index";
@@ -26,7 +30,7 @@ if (window.fs.existsSync(readerPresetsPath)) {
         const parsed = readJsonFileWithRetrySync(readerPresetsPath, {
             maxAttempts: 10,
             onRetry: (attempt, error) => {
-                window.logger.log("readerPresets initial retry:", attempt, error);
+                log.log(`readerPresets.json read retry ${attempt}/10`, error);
             },
         });
         const { state, didNormalize } = parseReaderPresetsStateWithMeta(parsed);
@@ -38,7 +42,7 @@ if (window.fs.existsSync(readerPresetsPath)) {
             });
         }
     } catch (err) {
-        window.logger.error("readerPresets parse error:", err);
+        log.error("readerPresets.json unreadable; rebuilding from app settings", err);
         const appSettings = parseAppSettings();
         const firstRun = buildFirstRunPresets(appSettings.readerSettings, appSettings.epubReaderSettings);
         saveJSONfile(readerPresetsPath, firstRun);
@@ -63,7 +67,7 @@ const readerPresets = createSlice({
     reducers: {
         addMangaPreset: (state, action: PayloadAction<MangaReaderPreset>) => {
             if (state.presets.some((p) => p.id === action.payload.id)) {
-                window.logger.error("Manga preset id already exists:", action.payload.id);
+                log.error(`addMangaPreset: id already exists (${action.payload.id})`);
                 return;
             }
             state.presets.push(action.payload);
@@ -71,7 +75,7 @@ const readerPresets = createSlice({
         },
         addBookPreset: (state, action: PayloadAction<BookReaderPreset>) => {
             if (state.presets.some((p) => p.id === action.payload.id)) {
-                window.logger.error("Book preset id already exists:", action.payload.id);
+                log.error(`addBookPreset: id already exists (${action.payload.id})`);
                 return;
             }
             state.presets.push(action.payload);
@@ -191,7 +195,7 @@ const readerPresets = createSlice({
                 if (!existingIds.has(p.id)) {
                     state.presets.push(p);
                     existingIds.add(p.id);
-                    window.logger.log("resetToDefaults: added missing User preset", p.type, p.id);
+                    log.log(`resetToDefaults: restored missing User preset (${p.type}, ${p.id})`);
                 }
             }
             saveReaderPresets(state);
@@ -230,14 +234,14 @@ const readerPresets = createSlice({
                 const data = readJsonFileWithRetrySync(readerPresetsPath, {
                     maxAttempts: 8,
                     onRetry: (attempt, error) => {
-                        window.logger.log("readerPresets refresh retry:", attempt, error);
+                        log.log(`readerPresets.json refresh retry ${attempt}/8`, error);
                     },
                 });
                 const { state: next, didNormalize } = parseReaderPresetsStateWithMeta(data);
                 if (didNormalize) saveJSONfile(readerPresetsPath, next);
                 return next;
             } catch {
-                window.logger.error("Unable to refresh readerPresets");
+                log.error("refreshReaderPresets: could not read readerPresets.json; keeping in-memory state");
                 return state;
             }
         },
@@ -396,7 +400,7 @@ export const refreshReaderPresetsWithReconcile =
             const fallback = presets.find((p) => p.type === "manga");
             if (fallback) {
                 dispatch(selectReaderPreset(fallback.id));
-                window.logger.log("Reconciled manga preset id to", fallback.id);
+                log.log(`Preset reconcile: manga active id -> "${fallback.id}"`);
             }
         }
 
@@ -405,7 +409,7 @@ export const refreshReaderPresetsWithReconcile =
             const fallback = presets.find((p) => p.type === "book");
             if (fallback) {
                 dispatch(selectReaderPreset(fallback.id));
-                window.logger.log("Reconciled book preset id to", fallback.id);
+                log.log(`Preset reconcile: book active id -> "${fallback.id}"`);
             }
         }
     };

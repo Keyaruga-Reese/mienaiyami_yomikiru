@@ -1,6 +1,9 @@
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
 import { useLayoutEffect, useState } from "react";
 import { useAppContext } from "../../App";
+
+const log = createRendererLogger("components/ui/InputCheckboxColor");
 
 const InputCheckboxColor: React.FC<{
     labelAfter?: string;
@@ -71,7 +74,9 @@ const InputCheckboxColor: React.FC<{
                     if (timeout) {
                         if (onChangeColor) {
                             if (aaa === undefined)
-                                return console.error("InputCheckboxColor:onChangeColor function must return.");
+                                return void log.error(
+                                    "onChangeColor must return a value",
+                                );
                             setValueProxy(aaa);
                         } else setValueProxy(e.currentTarget.value);
                     }
@@ -94,9 +99,7 @@ const InputCheckboxColor: React.FC<{
                             if (timeout) {
                                 if (onChangeColor) {
                                     if (aaa === undefined)
-                                        return console.error(
-                                            "InputCheckboxColor:onChangeColor function must return.",
-                                        );
+                                        return void log.error("onChangeColor must return a value");
                                     setValueProxy(aaa);
                                 } else setValueProxy(color);
                             }

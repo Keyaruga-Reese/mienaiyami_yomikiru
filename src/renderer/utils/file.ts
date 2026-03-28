@@ -1,3 +1,7 @@
+import { createRendererLogger } from "./logger";
+
+const log = createRendererLogger("utils/file");
+
 const userDataURL = window.electron.app.getPath("userData");
 const settingsPath = window.path.join(userDataURL, "settings.json");
 // TODO: remove bookmarks and history as no longer used
@@ -20,7 +24,7 @@ const saveJSONfile = (path: string, data: any) => {
                     data: str,
                 });
         } catch (err) {
-            console.error("ERROR::saveJSONfile:renderer:", err);
+            log.error(`saveJSONfile: stringify/parse failed before IPC write (${path})`, err);
         }
 };
 

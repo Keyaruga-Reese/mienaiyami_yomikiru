@@ -2,8 +2,11 @@ import * as pdfjsLib from "pdfjs-dist/build/pdf.js";
 //@ts-expect-error
 import worker from "pdfjs-dist/build/pdf.worker.js";
 import { dialogUtils } from "./dialog";
+import { createRendererLogger } from "./logger";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
+
+const log = createRendererLogger("utils/pdf");
 
 const renderPDF = async (
     link: string,
@@ -69,7 +72,7 @@ const renderPDF = async (
 
                         return true;
                     } catch (err) {
-                        window.logger.error(`Error rendering PDF page ${pageNum}:`, err);
+                        log.error(`PDF.js: render failed for page ${pageNum}`, err);
                         return false;
                     } finally {
                         count++;

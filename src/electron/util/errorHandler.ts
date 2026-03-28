@@ -2,7 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { app, BrowserWindow, dialog, shell } from "electron";
-import { log } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("errorHandler");
 
 /**
  * Error severity levels for better categorization
@@ -271,7 +273,7 @@ export class ErrorHandler {
         const window = windowId ? BrowserWindow.fromId(windowId) : BrowserWindow.getFocusedWindow();
 
         if (!window) {
-            log.warn("No window available for issue report dialog");
+            logger.warn("showIssueReportDialog: no BrowserWindow to attach the dialog to");
             return;
         }
 
@@ -335,7 +337,7 @@ export class ErrorHandler {
             this.logError(errorReport);
         }
 
-        log.error("Error occurred:", {
+        logger.error("ErrorHandler recorded:", {
             message: errorReport.message,
             severity: errorReport.severity,
             context: errorReport.context,
@@ -358,7 +360,7 @@ export class ErrorHandler {
             : BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
 
         if (!window) {
-            log.warn("No window available for error dialog");
+            logger.warn("showErrorDialog: no BrowserWindow to show the error box");
             return;
         }
 
@@ -416,7 +418,7 @@ export class ErrorHandler {
             const logLine = `${JSON.stringify(logEntry)}\n`;
             fs.appendFileSync(this.errorLogPath, logLine);
         } catch (error) {
-            log.error("Failed to write error log:", error);
+            logger.error("Failed to write error log:", error);
         }
     }
 

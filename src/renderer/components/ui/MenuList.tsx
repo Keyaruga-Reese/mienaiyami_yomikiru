@@ -1,11 +1,14 @@
 import { getShortcutsMapped } from "@store/shortcuts";
 import { keyFormatter } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import FocusLock from "react-focus-lock";
 import { shallowEqual } from "react-redux";
 import { useAppContext } from "../../App";
 import { useAppSelector } from "../../store/hooks";
+
+const log = createRendererLogger("components/ui/MenuList");
 
 // todo: replace with radix ui
 
@@ -22,7 +25,7 @@ const MenuList: React.FC = () => {
 
     useEffect(() => {
         if (optSelectData) {
-            if (!optSelectData.elemBox) return window.logger.error("MenuList: elem box prop not provided.");
+            if (!optSelectData.elemBox) return log.error("elem box prop not provided.");
             if (ref.current) {
                 let x = 0;
                 let y = 0;

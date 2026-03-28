@@ -1,7 +1,6 @@
+import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 import type { Configuration } from "webpack";
 import webpack from "webpack";
-
-// import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 
 import { plugins } from "./webpack.plugins";
 import { rules } from "./webpack.rules";
@@ -9,7 +8,7 @@ import { rules } from "./webpack.rules";
 export const preloadConfig: Configuration = {
     resolve: {
         extensions: [".ts", ".tsx", ".js"],
-        // plugins: [new TsconfigPathsPlugin()],
+        plugins: [new TsconfigPathsPlugin()],
     },
     module: {
         rules,

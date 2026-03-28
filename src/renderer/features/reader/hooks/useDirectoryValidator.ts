@@ -2,9 +2,12 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { setReaderLoading, setReaderState } from "@store/reader";
 import { dialogUtils } from "@utils/dialog";
 import { formatUtils } from "@utils/file";
+import { createRendererLogger } from "@utils/logger";
 import { useCallback } from "react";
 import { DirectoryValidatorService } from "../services/directoryValidator";
 import type { DirectoryValidatorOptions, ValidationResult } from "../types";
+
+const log = createRendererLogger("DirectoryValidator");
 
 export const useDirectoryValidator = () => {
     const dispatch = useAppDispatch();
@@ -16,7 +19,7 @@ export const useDirectoryValidator = () => {
         return new DirectoryValidatorService({
             fs: window.fs,
             path: window.path,
-            logger: window.logger,
+            logger: log,
             electron: window.electron,
             app: window.app,
             appSettings: {

@@ -15,6 +15,7 @@ import AniList from "@utils/anilist";
 import { processChapterNumber } from "@utils/chapterUtils";
 import { formatUtils } from "@utils/file";
 import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { InView } from "react-intersection-observer";
 import { useAppContext } from "../../../App";
@@ -23,6 +24,8 @@ import ReaderSettings from "./components/ReaderSettings";
 import ReaderSideList from "./components/ReaderSideList";
 
 const SCROLLBAR_THRESHOLD = 20;
+
+const log = createRendererLogger("manga/Reader");
 
 const Reader: React.FC = () => {
     const { pageNumberInputRef, validateDirectory, setContextMenuData } = useAppContext();
@@ -158,7 +161,7 @@ const Reader: React.FC = () => {
                 .then(() => {
                     setCurrentlyDecoding(false);
                 })
-                .catch((err) => console.error(err));
+                .catch((err) => log.error("Image decode() failed in decode queue", err));
         }
     }, [currentlyDecoding, imageDecodeQueue]);
 
@@ -803,7 +806,7 @@ const Reader: React.FC = () => {
                         imageSafeURL = `data:image/${window.path.extname(imgURL).substring(1)};base64,${data}`;
                         load();
                     })
-                    .catch(console.error);
+                    .catch((err) => log.error(`Failed to read image as base64: ${imgURL}`, err));
             }
         });
     }, [images]);
@@ -913,7 +916,10 @@ const Reader: React.FC = () => {
             }
             const chapterNumber = processChapterNumber(readerState?.content?.progress?.chapterName);
             if (!chapterNumber) {
-                console.log("Anilist::autoUpdateAnilistProgress: Could not get chapter number from the title.");
+                log.log(
+                    "AniList auto-progress: skipped (could not parse chapter number from chapter title)",
+                    readerState?.content?.progress?.chapterName,
+                );
                 return;
             }
             dispatch(
@@ -928,9 +934,11 @@ const Reader: React.FC = () => {
                 AniList.setCurrentMangaProgress(chapterNumber).then((e) => {
                     if (e) {
                         dispatch(setAnilistCurrentManga(e));
-                        console.log("Anilist::autoUpdateAnilistProgress: updated progress", chapterNumber);
+                        log.log(`AniList auto-progress: synced list progress to chapter ${chapterNumber}`);
                     } else {
-                        console.error("Anilist::autoUpdateAnilistProgress: Failed to sync AniList progress.");
+                        log.error(
+                            "AniList auto-progress: setCurrentMangaProgress returned empty (sync may have failed)",
+                        );
                         // dialogUtils.customError({ message: "Failed to sync AniList progress.", log: false });
                     }
                 });

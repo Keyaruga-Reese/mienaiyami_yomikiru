@@ -20,6 +20,7 @@ import { dialogUtils } from "@utils/dialog";
 import EPUB, { type EPubData } from "@utils/epub";
 import { DEFAULT_HIGHLIGHT_COLORS, highlightUtils } from "@utils/highlight";
 import { keyFormatter, mouseEventFormatter } from "@utils/keybindings";
+import { createRendererLogger } from "@utils/logger";
 import { getCSSPath } from "@utils/utils";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -30,6 +31,8 @@ import EPUBReaderSettings from "./EPubReaderSettings";
 import EPubReaderSideList from "./EPubReaderSideList";
 import HTMLPart from "./HTMLPart";
 import StyleSheets from "./StyleSheets";
+
+const log = createRendererLogger("epub/EPubReader");
 
 // todo: planning major refactor similar to manga Reader.tsx
 
@@ -281,7 +284,7 @@ const EPubReader: React.FC = () => {
                 .rm(window.app.deleteDirOnClose, {
                     recursive: true,
                 })
-                .catch((err) => window.logger.error("Error while deleting temp dir", err));
+                .catch((err) => log.error("temp extract dir delete failed", err));
 
         link = window.path.normalize(link);
         EPUB.readEpubFile(link, appSettings.keepExtractedFiles)
@@ -339,7 +342,7 @@ const EPubReader: React.FC = () => {
                 // if (ed.toc.length > 200 && !appSettings.epubReaderSettings.loadOneChapter)
                 //     dialogUtils.warn({
                 //         message: "Too many chapters in book.",
-                //         detail: "It might cause instability and high RAM usage. It is recommended to enable option to load and show only chapter at a time from Settings → Other Settings.",
+                //         detail: "It might cause instability and high RAM usage. It is recommended to enable option to load and show only chapter at a time from Settings -> Other Settings.",
                 //         noOption: false,
                 //     });
                 dispatch(setReaderLoading(null));
@@ -430,7 +433,7 @@ const EPubReader: React.FC = () => {
                         findInPageRefs.current.currentIndex = index + 1;
                         findInPageRefs.current.prevStr = str;
                     } else {
-                        console.warn("findInPage: element not found.");
+                        log.warn("find-in-page: no matching element in chapter DOM");
                     }
                 }
             }
@@ -498,7 +501,7 @@ const EPubReader: React.FC = () => {
                     setDisplayList("notes");
                 } else color = colorUtils.new(color).hexa();
             } catch (err) {
-                console.error(err);
+                log.error("find-in-page scroll/highlight failed", err);
                 color = DEFAULT_HIGHLIGHT_COLORS[0];
             }
             dispatch(

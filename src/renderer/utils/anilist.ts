@@ -1,5 +1,8 @@
 import { dialogUtils } from "./dialog";
 import { getStorageItem, setStorageItem } from "./localStorage";
+import { createRendererLogger } from "./logger";
+
+const log = createRendererLogger("AniList");
 
 export default class AniList {
     static #token = "";
@@ -83,7 +86,7 @@ export default class AniList {
             const tracking = JSON.parse(getStorageItem("ANILIST_TRACKING") || "[]") as Anilist.TrackStore;
             return tracking.filter((e) => window.fs.existsSync(e.localURL));
         } catch (e) {
-            console.error(e);
+            log.error("loadTrackingFromStorage: invalid JSON or read error; clearing tracking list", e);
             return [];
         }
     }
@@ -121,12 +124,12 @@ export default class AniList {
             return raw.ok;
         } catch (reason) {
             dialogUtils.customError({ message: "Unable to make request to AniList server." });
-            window.logger.error(`AniList::checkToken:\n${reason}`);
+            log.error("checkToken: request failed", reason);
         }
     }
     static async fetch(query: string, variables = {}) {
         if (!AniList.#token) {
-            window.logger.error("AniList::fetch: user not logged in.");
+            log.error("fetch: skipped (no access token; user not logged in)");
             return;
         }
         try {
@@ -148,10 +151,10 @@ export default class AniList {
                 const json = await raw.json();
                 return json.data;
             } else {
-                window.logger.error("AniList::fetch: response not ok.");
+                log.error(`fetch: HTTP ${raw.status} ${raw.statusText} from graphql.anilist.co`);
                 const json = await raw.json();
                 if (json) {
-                    window.logger.error(json);
+                    log.error("fetch: error payload from API", json);
                     if (json.errors.message === "Invalid token")
                         dialogUtils.customError({
                             message: "AniList: Invalid token",
@@ -160,7 +163,7 @@ export default class AniList {
                 }
             }
         } catch (reason) {
-            window.logger.error(`AniList::fetch:\n${reason}`);
+            log.error("fetch: network or parse error", reason);
         }
     }
     static async getUserName() {
@@ -225,7 +228,7 @@ export default class AniList {
     }
     static async setCurrentMangaData(newData: Omit<Anilist.MangaData, "id" | "mediaId" | "media">) {
         if (!AniList.#currentMangaListId) {
-            window.logger.error("AniList::setCurrentMangaStatus: currentMangaListId not defined.");
+            log.error("setCurrentMangaData: currentMangaListId missing; cannot save list entry");
             return;
         }
         const variables = AniList.getVariables({ id: AniList.#currentMangaListId, ...newData });
@@ -236,7 +239,7 @@ export default class AniList {
     }
     static async setCurrentMangaProgress(progress: Anilist.MangaData["progress"]) {
         if (!AniList.#currentMangaListId) {
-            window.logger.error("AniList::setCurrentMangaProgress: currentMangaListId not defined.");
+            log.error("setCurrentMangaProgress: currentMangaListId missing; cannot sync progress");
             return;
         }
         const variables = AniList.getVariables({ id: AniList.#currentMangaListId, progress });

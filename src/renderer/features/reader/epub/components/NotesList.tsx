@@ -10,9 +10,12 @@ import { colorUtils } from "@utils/color";
 import dateUtils from "@utils/date";
 import { dialogUtils } from "@utils/dialog";
 import { DEFAULT_HIGHLIGHT_COLORS } from "@utils/highlight";
+import { createRendererLogger } from "@utils/logger";
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { shallowEqual } from "react-redux";
 import { useAppContext } from "src/renderer/App";
+
+const log = createRendererLogger("epub/NotesList");
 
 const NoteModal: React.FC<{
     noteId: number;
@@ -31,7 +34,7 @@ const NoteModal: React.FC<{
             try {
                 note.color !== "OPEN_EDIT" && setColor(colorUtils.new(note.color));
             } catch (error) {
-                console.error(error);
+                log.error("invalid stored note color", error);
                 setColor(colorUtils.new(DEFAULT_HIGHLIGHT_COLORS[0]));
             }
         }
@@ -45,7 +48,7 @@ const NoteModal: React.FC<{
 
     if (!bookInReader) {
         clear();
-        console.error(`bookInReader is undefined for noteId: ${noteId}`);
+        log.error(`bookInReader missing while editing note id ${noteId}`);
         dialogUtils.customError({
             message: "Unknown error",
         });
@@ -149,7 +152,7 @@ const NotesList: React.FC<{
                 if (!note) throw new Error("Note not found");
                 openChapterById(note.chapterId, `[data-highlight-id="${noteId}"]`);
             } catch (error) {
-                console.error(error);
+                log.error("navigate to note chapter failed", error);
                 dialogUtils.customError({
                     message: "Could not find the note",
                 });

@@ -5,9 +5,12 @@ import { setAppSettings } from "@store/appSettings";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { dialogUtils } from "@utils/dialog";
 import { formatUtils, promptSelectDir } from "@utils/file";
+import { createRendererLogger } from "@utils/logger";
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppContext } from "src/renderer/App";
 import ListNavigator from "../../../components/ListNavigator";
+
+const log = createRendererLogger("home/LocationsTab");
 
 type LocationData = { name: string; link: string; dateModified: number };
 
@@ -66,7 +69,7 @@ const LocationsTab = (): ReactElement => {
                                 });
                             }
                         } catch (error) {
-                            window.logger.error("displayList: error", error);
+                            log.error("Locations tab: failed to load library items", error);
                         }
                     }),
                 );
@@ -79,7 +82,7 @@ const LocationsTab = (): ReactElement => {
             if (err instanceof Error) {
                 dialogUtils.nodeError(err);
             }
-            window.logger.error(err);
+            log.error("list refresh failed", err);
         }
     };
 

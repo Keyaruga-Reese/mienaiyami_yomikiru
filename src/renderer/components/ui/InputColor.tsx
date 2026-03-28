@@ -1,6 +1,9 @@
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
 import { useLayoutEffect, useState } from "react";
 import { useAppContext } from "../../App";
+
+const log = createRendererLogger("components/ui/InputColor");
 
 const InputColor: React.FC<{
     labeled?: boolean;
@@ -59,7 +62,7 @@ const InputColor: React.FC<{
                 const aaa = onChange?.(color);
                 if (timeout) {
                     if (onChange) {
-                        if (aaa === undefined) return console.error("InputColor:onChange function must return.");
+                        if (aaa === undefined) return void log.error("onChange must return a value");
                         setValueProxy(aaa);
                     } else setValueProxy(color);
                 }

@@ -7,9 +7,11 @@ import * as crossZip from "cross-zip";
 import { app, BrowserWindow, dialog, shell } from "electron";
 import * as electronDl from "electron-dl";
 import fetch from "electron-fetch";
-import logger from "electron-log";
 import * as semver from "semver";
 import { IS_PORTABLE, isArchLinux, sleep } from "./util";
+import { createMainLogger } from "./util/logger";
+
+const logger = createMainLogger("updater");
 
 declare const DOWNLOAD_PROGRESS_WEBPACK_ENTRY: string;
 
@@ -42,12 +44,12 @@ const getArtifactDownloadUrl = async (version: string): Promise<string | null> =
         const artifactsUrl = `${DOWNLOAD_LINK}/${url}/artifacts.json`;
         const res = await fetch(artifactsUrl);
         if (!res.ok) {
-            logger.warn("Failed to fetch artifacts.json:", res.status, res.statusText);
+            logger.warn(`Update: artifacts.json HTTP ${res.status} ${res.statusText} (${artifactsUrl})`);
             return null;
         }
         const artifacts = (await res.json()) as ArtifactMetadata[];
         if (!Array.isArray(artifacts) || artifacts.length === 0) {
-            logger.warn("artifacts.json empty or invalid");
+            logger.warn(`Update: artifacts.json missing or empty for ${artifactsUrl}`);
             return null;
         }
         const platform = process.platform as string;
@@ -68,12 +70,12 @@ const getArtifactDownloadUrl = async (version: string): Promise<string | null> =
         }
 
         if (!match) {
-            logger.warn("No matching artifact in artifacts.json for", { platform, arch, wantType });
+            logger.warn("Update: no build artifact for this OS/install type", { platform, arch, wantType });
             return null;
         }
         return `${DOWNLOAD_LINK}/${url}/${match.name}`;
     } catch (error) {
-        logger.error("getArtifactDownloadUrl:", error);
+        logger.error("Update: could not resolve download URL from artifacts.json", error);
         return null;
     }
 };
@@ -122,7 +124,7 @@ const checkForAnnouncements = async () => {
                     else if (res.response === 1) shell.openExternal(ANNOUNCEMENTS_DISCUSSION_URL);
                 });
     } catch (error) {
-        logger.error("checkForAnnouncements:", error);
+        logger.error("Announcements: fetch or parse failed (non-fatal)", error);
     }
 };
 
@@ -147,7 +149,7 @@ const checkForUpdate = async (
         const rawdata = await fetch(RELEASES_URL).then((data) => data.json());
 
         if (!Array.isArray(rawdata) || rawdata.length === 0) {
-            logger.log("No releases found or invalid response");
+            logger.log("Update check: GitHub releases API returned no usable releases");
             if (promptAfterCheck) {
                 showNoReleasesMessage(windowId, channel);
             }
@@ -155,7 +157,7 @@ const checkForUpdate = async (
         }
 
         const currentVersion = app.getVersion();
-        logger.log("Current version:", currentVersion);
+        logger.log(`Update check: installed version ${currentVersion}`);
 
         const releases = rawdata
             .filter((release: any) => {
@@ -178,7 +180,7 @@ const checkForUpdate = async (
             });
 
         if (releases.length === 0) {
-            logger.log(`No ${channel} releases found.`);
+            logger.log(`Update check: no ${channel} channel releases after filtering`);
             if (promptAfterCheck) {
                 showNoReleasesMessage(windowId, channel);
             }
@@ -188,13 +190,13 @@ const checkForUpdate = async (
         const latestRelease = releases[0];
         const latestVersion = semver.clean(latestRelease.tag_name, { loose: true }) || "";
 
-        logger.log(`Latest ${channel} version:`, latestVersion);
+        logger.log(`Update check: latest ${channel} tag -> ${latestVersion}`);
 
         const versionDiff = semver.diff(currentVersion, latestVersion);
         const isNewer = semver.gt(latestVersion, currentVersion);
 
         if (skipPatch && channel === "stable" && versionDiff === "patch") {
-            logger.log(`${versionDiff} update available, skipping due to settings.`);
+            logger.log(`Update: newer ${versionDiff} build available but skipped (skip patch updates enabled)`);
             return;
         }
 
@@ -207,7 +209,7 @@ const checkForUpdate = async (
             return;
         }
 
-        logger.log("Running latest version.");
+        logger.log("Update check: already on latest matching release");
         if (promptAfterCheck) {
             const window = BrowserWindow.fromId(windowId ?? 1)!;
             dialog.showMessageBox(window, {
@@ -218,7 +220,7 @@ const checkForUpdate = async (
             });
         }
     } catch (error) {
-        logger.error("Error checking for updates:", error);
+        logger.error("Update check: GitHub API or semver comparison failed", error);
         if (promptAfterCheck) {
             const window = BrowserWindow.fromId(windowId ?? 1)!;
             dialog.showMessageBox(window, {
@@ -314,7 +316,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
             if (isClosingDownloadWindowProgrammatically) {
                 return;
             }
-            logger.log("Download window closed by user, canceling update download...");
+            logger.log("Update download: progress window closed by user; canceling DownloadItem");
             downloadItem?.cancel();
         });
     }
@@ -401,8 +403,8 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                 directory: tempPath,
                 onStarted: (e) => {
                     downloadItem = e;
-                    logger.log("Downloading updates...");
-                    logger.log(dl, `"${tempPath}"`);
+                    logger.log(`Update download started -> ${dl}`);
+                    logger.log(`Update download temp dir: "${tempPath}"`);
                     e.once("done", (_, state) => {
                         if (state !== "completed") {
                             dialog.showMessageBox(window, {
@@ -415,7 +417,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                 },
                 onCancel: () => {
                     downloadItem = null;
-                    logger.log("Download canceled.");
+                    logger.log("Update download: canceled by user or system");
                 },
                 onCompleted: (file) => {
                     downloadItem = null;
@@ -440,7 +442,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
     void (async () => {
         const dl = await getArtifactDownloadUrl(latestVersion);
         if (!dl) {
-            logger.error("Could not resolve update artifact from artifacts.json");
+            logger.error(`Update download: no artifact URL for v${latestVersion} (see artifacts.json)`);
             dialog
                 .showMessageBox(window, {
                     type: "error",
@@ -461,16 +463,16 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                 if (!fs.existsSync(extractPath)) fs.mkdirSync(extractPath);
 
                 downloadFile(dl, webContents, (file) => {
-                    logger.log(`${file.filename} downloaded.`);
+                    logger.log(`Update package saved: ${file.filename}`);
                     crossZip.unzip(file.path, extractPath, (err) => {
-                        if (err) return logger.error(err);
-                        logger.log(`Successfully extracted at "${extractPath}"`);
+                        if (err) return logger.error("Portable update: unzip failed", err);
+                        logger.log(`Portable update: extracted to "${extractPath}"`);
                         const appPath = path.join(app.getAppPath(), "../../");
                         const appDirName = path.join(app.getPath("exe"), "../");
                         setupInstallOnQuit = () => {
                             app.once("quit", () => {
-                                logger.log("Installing updates...");
-                                logger.log(`Moving files to "${appPath}"`);
+                                logger.log("Portable update: copying files over install dir (on quit)");
+                                logger.log(`Portable update: target base "${appPath}"`);
                                 spawn(
                                     `cmd.exe /c start powershell.exe " Write-Output 'Starting update...' ; Start-Sleep -Seconds 5.0 ;` +
                                         ` $sourcePath = Join-Path '${extractPath}' '*' ; ` +
@@ -482,41 +484,41 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                                         ` & '${app.getPath("exe")}' ; "`,
                                     { shell: true, cwd: appDirName },
                                 ).on("exit", process.exit);
-                                logger.log("Quitting app...");
+                                logger.log("Portable update: exiting so PowerShell can replace files");
                             });
-                            logger.log("Will install updates on quit.");
+                            logger.log("Portable update: will run file copy on next app quit");
                         };
                         performInstallNow = () => {
                             setupInstallOnQuit?.();
-                            logger.log("Preparing to install updates now...");
+                            logger.log("Portable update: quitting now to start install");
                             app.quit();
                         };
-                        logger.log("Updates ready. Waiting for user choice.");
+                        logger.log("Portable update: package ready; waiting for user install choice");
                         promptInstall();
                     });
                 });
             } else {
                 downloadFile(dl, webContents, (file) => {
-                    logger.log(`${file.filename} downloaded.`);
+                    logger.log(`Installer downloaded: ${file.filename}`);
                     setupInstallOnQuit = () => {
                         app.once("quit", () => {
-                            logger.log("Installing updates...");
+                            logger.log("Win32 update: launching downloaded installer on quit");
                             spawn(
                                 `cmd.exe /c start powershell.exe "Write-Output 'Starting update...' ; Start-Sleep -Seconds 5.0 ; Start-Process '${file.path}'"`,
                                 {
                                     shell: true,
                                 },
                             ).on("exit", process.exit);
-                            logger.log("Quitting app...");
+                            logger.log("Win32 update: process exit after spawning installer");
                         });
-                        logger.log("Will install updates on quit.");
+                        logger.log("Win32 update: installer will run on next quit");
                     };
                     performInstallNow = () => {
                         setupInstallOnQuit?.();
-                        logger.log("Preparing to install updates now...");
+                        logger.log("Win32 update: quitting to run installer now");
                         app.quit();
                     };
-                    logger.log("Updates ready. Waiting for user choice.");
+                    logger.log("Win32 update: installer ready; waiting for user choice");
                     promptInstall();
                 });
             }
@@ -527,20 +529,20 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
              */
             const installWithSudo = (command: string): Promise<void> =>
                 new Promise((resolve, reject) => {
-                    logger.log("Linux update install command (sudo):", command);
+                    logger.log("Linux update: running package manager via sudo", command);
                     execSudo(command, { name: "Yomikiru" }, (err) => {
                         if (err) {
-                            logger.error("Linux update install failed:", err);
+                            logger.error("Linux update: sudo package install failed", err);
                             reject(err);
                             return;
                         }
-                        logger.log("Linux update install completed.");
+                        logger.log("Linux update: package install finished successfully");
                         resolve();
                     });
                 });
 
             const relaunchAndQuit = () => {
-                logger.log("Relaunching app after update install...");
+                logger.log("Linux update: relaunching application");
                 app.relaunch();
                 app.quit();
             };
@@ -556,7 +558,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
             };
 
             const afterDownload = (file: { filename: string; path: string }) => {
-                logger.log(`Update package downloaded: ${file.filename}`);
+                logger.log(`Linux update: package saved (${file.filename})`);
                 if (newWindow instanceof BrowserWindow) {
                     isClosingDownloadWindowProgrammatically = true;
                     newWindow.close();
@@ -567,7 +569,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                     app.once("before-quit", () => {
                         void installWithSudo(cmd).catch(showInstallError);
                     });
-                    logger.log(`Will install updates on quit (linux/${isArchLinux() ? "arch" : "deb"}).`);
+                    logger.log(`Linux update: ${isArchLinux() ? "pacman" : "dpkg"} install scheduled on quit`);
                 };
                 performInstallNow = () => {
                     void (async () => {
@@ -580,7 +582,7 @@ const downloadUpdates = (latestVersion: string, windowId: number, silent = false
                     })();
                 };
 
-                logger.log("Linux updates ready. Waiting for user choice.");
+                logger.log("Linux update: package ready; waiting for user install choice");
                 promptInstall();
             };
 

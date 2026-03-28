@@ -1,7 +1,11 @@
 import { faEyeDropper, faSort } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { colorUtils } from "@utils/color";
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
+
+const log = createRendererLogger("components/ui/InputColorReal");
+
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import FocusLock, { MoveFocusInside } from "react-focus-lock";
 import { useAppContext } from "../../App";
@@ -33,7 +37,7 @@ const InputColorReal: React.FC = () => {
     useEffect(() => {
         if (colorSelectData) {
             setColor(colorSelectData.value);
-            if (!colorSelectData.elemBox) return window.logger.error("MenuList: elem box prop not provided.");
+            if (!colorSelectData.elemBox) return log.error("MenuList: elem box prop not provided.");
             if (ref.current) {
                 let x = 0;
                 let y = 0;
@@ -443,7 +447,7 @@ const HEXAInput = ({
                     setColor(newColor.alpha(1));
                 }
             } catch (err) {
-                console.error(err);
+                log.error("could not parse hex input", err);
             }
         }, 1000);
         return () => {

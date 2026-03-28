@@ -1,5 +1,8 @@
 import { dialogUtils } from "@utils/dialog";
+import { createRendererLogger } from "@utils/logger";
 import { useState } from "react";
+
+const log = createRendererLogger("settings/useExplorerOptions");
 
 export const useExplorerOptions = () => {
     const [isUpdating, setIsUpdating] = useState(false);
@@ -25,7 +28,7 @@ export const useExplorerOptions = () => {
             return true;
         } catch (error) {
             if (error instanceof Error) dialogUtils.nodeError(error);
-            else window.logger.error("Failed to update explorer options:", error);
+            else log.error("registry update failed", error);
             return false;
         } finally {
             setIsUpdating(false);

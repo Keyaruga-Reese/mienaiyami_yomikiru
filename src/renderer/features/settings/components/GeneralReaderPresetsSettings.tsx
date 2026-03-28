@@ -10,9 +10,12 @@ import {
     selectReaderPreset,
 } from "@store/readerPresets";
 import { dialogUtils } from "@utils/dialog";
+import { createRendererLogger } from "@utils/logger";
 import type { BookReaderPreset, MangaReaderPreset } from "@utils/readerPresets";
 import { isUserPresetId, parsePresetImport } from "@utils/readerPresets";
 import { useSettingsContext } from "../Settings";
+
+const log = createRendererLogger("settings/GeneralReaderPresetsSettings");
 
 type PresetActionsRowProps = {
     type: "manga" | "book";
@@ -131,7 +134,7 @@ const PresetActionsRow = ({ type, title }: PresetActionsRowProps) => {
                                 noOption: true,
                             });
                         } catch (err) {
-                            window.logger.error(err);
+                            log.error(err);
                             dialogUtils.customError({
                                 message: "Invalid preset file.",
                                 log: false,

@@ -1,4 +1,7 @@
 import { format, formatDistance, formatRelative, isValid } from "date-fns";
+import { createRendererLogger } from "./logger";
+
+const log = createRendererLogger("utils/date");
 
 export type DateFormatOptions = {
     /** Format to use for the date */
@@ -28,7 +31,7 @@ const formatDate = (date: Date | string | number | null | undefined, options?: D
 
         return format(dateObj, dateFormat);
     } catch (error) {
-        console.error("Error formatting date:", error);
+        log.error("formatDate: unexpected error", error);
         return fallback;
     }
 };
@@ -52,7 +55,7 @@ const formatRelativeTime = (
 
         return formatDistance(dateObj, new Date(), { addSuffix: true });
     } catch (error) {
-        console.error("Error formatting relative date:", error);
+        log.error("formatRelativeTime: unexpected error", error);
         return options?.fallback || DEFAULT_FALLBACK;
     }
 };
@@ -79,7 +82,7 @@ const formatDateRelativeTo = (
 
         return formatRelative(dateObj, baseDateObj);
     } catch (error) {
-        console.error("Error formatting relative date:", error);
+        log.error("formatDateRelativeTo: unexpected error", error);
         return options?.fallback || DEFAULT_FALLBACK;
     }
 };

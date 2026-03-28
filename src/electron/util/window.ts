@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import { ipc } from "@electron/ipc/utils";
 import * as remote from "@electron/remote/main";
 import { app, BrowserWindow, dialog, shell } from "electron";
-import { getWindowFromWebContents, log } from ".";
+import { getWindowFromWebContents } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("WindowManager");
+
 import { handleError } from "./errorHandler";
 import { MainSettings } from "./mainSettings";
 import { TrayManager } from "./tray";
@@ -38,7 +42,7 @@ export class WindowManager {
         }, 1000 * 10);
     }
     private constructor() {
-        console.error("This class should not be instantiated.");
+        logger.error("WindowManager must not be instantiated (static API only)");
     }
 
     // taskbar right click option
@@ -107,7 +111,7 @@ export class WindowManager {
                 });
             WindowManager.handleWindowClose(window);
             window.webContents.on("render-process-gone", (detail) => {
-                log.error("Render process gone:", detail);
+                logger.error("Renderer process terminated unexpectedly", detail);
                 dialog
                     .showMessageBox({
                         type: "error",
@@ -147,18 +151,18 @@ export class WindowManager {
                     ipc.send(window.webContents, "reader:recordPage");
                 }
             } catch (err) {
-                log.error("Error sending reader:recordPage:", err);
+                logger.error("Failed to send reader:recordPage IPC before window close", err);
                 handleError(err instanceof Error ? err : new Error(String(err)), "medium");
             }
 
             setTimeout(() => {
                 try {
                     if (!window?.isDestroyed()) {
-                        log.log("No response from window. Force closing app.");
+                        logger.log("Close timeout: destroying window after reader:recordPage wait");
                         window.destroy();
                     }
                 } catch (err) {
-                    log.error("Error during forced close:", err);
+                    logger.error("Window destroy after close timeout failed", err);
                 }
             }, 5000);
 
@@ -186,7 +190,7 @@ export class WindowManager {
             await fs.access(dirToDlt);
             await fs.rm(dirToDlt, { recursive: true });
         } catch (reason) {
-            log.error("Could not delete temp files:", reason);
+            logger.error(`Could not delete temp reader directory "${dirToDlt}"`, reason);
         }
     }
     static addDirToDelete(window: Electron.WebContents | number, dir: string): void {
@@ -198,7 +202,7 @@ export class WindowManager {
                 WindowManager.deleteDirsOnClose[index] = dir;
             }
         } catch (error) {
-            log.error("Could not add dir to delete:", error);
+            logger.error("addDirToDelete: window not found or lookup failed", error);
         }
     }
 

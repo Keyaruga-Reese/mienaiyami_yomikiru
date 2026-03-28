@@ -5,7 +5,9 @@ import type { HistoryItem, Manga_BookItem } from "@common/types/legacy";
 import { pingDatabaseChange } from "@electron/ipc/database";
 import { app, dialog } from "electron";
 import { type DatabaseService, DB_PATH } from "../db";
-import { log } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("migrate");
 
 // migrate from 2.19.6 to sqlite
 const userDataURL = app.getPath("userData");
@@ -18,7 +20,7 @@ export const migrateToSqlite = async (
     bookmarks: Manga_BookItem[],
 ): Promise<void> => {
     try {
-        log.log("Backing up db");
+        logger.log("SQLite migration: backing up existing data.db before JSON import");
         await fs.access(DB_PATH);
         const backupPath = path.join(userDataURL, `data.db-${Date.now()}.backup`);
         await fs.copyFile(DB_PATH, backupPath);
@@ -28,7 +30,7 @@ export const migrateToSqlite = async (
         await fs.rename(bookmarksPath, path.join(userDataURL, "bookmarks.json.old"));
         await fs.rename(historyPath, path.join(userDataURL, "history.json.old"));
     } catch (error) {
-        log.error("Error migrating to sqlite:", error);
+        logger.error("SQLite migration from bookmarks/history JSON failed", error);
         dialog.showMessageBox({
             type: "error",
             message: "Error migrating to sqlite",
@@ -66,6 +68,6 @@ export const checkForJSONMigration = async (db: DatabaseService): Promise<void> 
             }
         }
     } catch (error) {
-        console.error("Error checking for old JSON data to migrate:", error);
+        logger.error("Could not read legacy bookmarks.json/history.json for migration offer", error);
     }
 };

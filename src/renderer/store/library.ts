@@ -1,7 +1,10 @@
 import type { DatabaseChannels } from "@common/types/ipc";
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { formatUtils } from "@utils/file";
+import { createRendererLogger } from "../utils/logger";
 import type { RootState } from ".";
+
+const log = createRendererLogger("store/library");
 
 // todo : add proper error handling
 
@@ -71,7 +74,7 @@ export const updateCurrentItemProgress = createAsyncThunk(
         //todo test
         const readerState = (getState() as RootState).reader;
         if (!readerState.link) {
-            console.error("No link in reader");
+            log.error("updateCurrentItemProgress: no active reader link; skipping DB write");
             return;
         }
         if (readerState.type === "book" && readerState.content?.progress) {
@@ -87,7 +90,7 @@ export const updateCurrentItemProgress = createAsyncThunk(
             if (!res) throw new Error("Failed to update progress");
             return res;
         } else {
-            console.error("No progress to update");
+            log.error("updateCurrentItemProgress: reader has no progress object; skipping DB write");
         }
     },
 );
@@ -158,7 +161,7 @@ export const selectLibraryItem = (state: RootState, path: string) => {
         const dirPath = formatUtils.book.test(path) ? path : window.path.dirname(path);
         return state.library.items[dirPath] ?? null;
     } catch (error) {
-        console.error("Error in selectLibraryItem:", error);
+        log.error(`selectLibraryItem: lookup failed for "${path}"`, error);
         return null;
     }
 };

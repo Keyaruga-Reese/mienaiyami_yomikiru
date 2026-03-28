@@ -4,8 +4,11 @@ import { setReaderLoading } from "@store/reader";
 import InputNumber from "@ui/InputNumber";
 import { dialogUtils } from "@utils/dialog";
 import { promptSelectDir } from "@utils/file";
+import { createRendererLogger } from "@utils/logger";
 import { renderPDF } from "@utils/pdf";
 import { useSettingsContext } from "../Settings";
+
+const log = createRendererLogger("settings/GeneralPDFSettings");
 
 const GeneralPDFSettings: React.FC = () => {
     const { scrollIntoView } = useSettingsContext();
@@ -88,12 +91,12 @@ const GeneralPDFSettings: React.FC = () => {
                                                 recursive: true,
                                             });
                                         await window.fs.mkdir(renderPath);
-                                        console.log(`Rendering "${path}" at "${renderPath}"`);
+                                        log.log(`rendering -> "${renderPath}"`);
                                         try {
                                             await renderPDF(path, renderPath, appSettings.readerSettings.pdfScale);
-                                        } catch (reason: any) {
-                                            console.error(reason);
-                                            if (reason?.message && !reason.message.includes("password"))
+                                        } catch (reason: unknown) {
+                                            log.error(`render failed for "${path}"`, reason);
+                                            if (reason instanceof Error && !reason.message.includes("password"))
                                                 dialogUtils.customError({
                                                     message: "Error in rendering PDF",
                                                     detail: path,

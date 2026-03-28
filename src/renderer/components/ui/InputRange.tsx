@@ -1,5 +1,8 @@
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
 import { useLayoutEffect, useState } from "react";
+
+const log = createRendererLogger("components/ui/InputRange");
 
 const InputRange = ({
     labeled = false,
@@ -57,7 +60,7 @@ const InputRange = ({
                         if (timeout) {
                             if (onChange) {
                                 if (aaa === undefined)
-                                    return console.error("InputRange:onChange function must return.");
+                                    return void log.error("InputRange: onChange must return a value");
                                 setValueProxy(aaa);
                             } else setValueProxy(e.currentTarget.valueAsNumber);
                         }
@@ -87,7 +90,7 @@ const InputRange = ({
                 const aaa = onChange?.(e);
                 if (timeout) {
                     if (onChange) {
-                        if (aaa === undefined) return console.error("InputRange:onChange function must return.");
+                        if (aaa === undefined) return void log.error("onChange must return a value");
                         setValueProxy(aaa);
                     } else setValueProxy(e.currentTarget.valueAsNumber);
                 }

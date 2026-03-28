@@ -1,3 +1,4 @@
+import type { Logger } from "@common/logger";
 import { dialogUtils } from "@utils/dialog";
 import { formatUtils, unzip } from "@utils/file";
 import { renderPDF } from "@utils/pdf";
@@ -21,7 +22,7 @@ export class DirectoryValidatorService {
         private readonly dependencies: {
             fs: typeof window.fs;
             path: typeof window.path;
-            logger: typeof window.logger;
+            logger: Logger;
             electron: typeof window.electron;
             app: typeof window.app;
             onProgress: ValidationProgressCallback;
@@ -61,7 +62,7 @@ export class DirectoryValidatorService {
 
             return cached.result;
         } catch (error) {
-            this.dependencies.logger.error(`Error checking mtime for "${link}":`, error);
+            this.dependencies.logger.error(`Validation cache: could not read mtime for "${link}"`, error);
             DirectoryValidatorService.cache.delete(link);
             return null;
         }
@@ -92,13 +93,13 @@ export class DirectoryValidatorService {
     ): void {
         const { logger } = this.dependencies;
 
-        logger.log(
-            `Validation ${result.isValid ? "succeeded" : "failed"} for ${link} ` +
-                `(took ${duration}ms, options: ${JSON.stringify(options)})`,
-        );
+        // logger.info(
+        //     `validate ${result.isValid ? "ok" : "invalid"} "${link}" (${Math.round(duration)}ms)`,
+        //     options,
+        // );
 
         if (!result.isValid && result.error) {
-            logger.error(`Validation error: ${result.error}`);
+            logger.error(`validation reason: ${result.error}`);
         }
     }
 
@@ -124,7 +125,6 @@ export class DirectoryValidatorService {
         if (useCache) {
             this.setCachedResult(link, result, mtime);
         }
-
         const duration = performance.now() - startTime;
         // dev only
         if (!this.dependencies.electron.app.isPackaged) this.logValidationAttempt(link, options, result, duration);
@@ -180,7 +180,7 @@ export class DirectoryValidatorService {
                 return await this.processDirectory(normalizedLink, maxSubdirectoryDepth || 0, options);
             }
         } catch (error) {
-            logger.error("Directory validation failed:", error);
+            logger.error(`validateDirectory: unhandled error for "${link}"`, error);
             return {
                 isValid: false,
                 error: error instanceof Error ? error : new Error(String(error)),
@@ -201,7 +201,7 @@ export class DirectoryValidatorService {
             try {
                 await fs.rm(deleteDirOnClose, { recursive: true });
             } catch (err) {
-                logger.error("Failed to remove previous temp directory:", err);
+                logger.error(`cleanupPreviousTempDir: rm failed for "${deleteDirOnClose}"`, err);
             }
         }
     }
@@ -229,10 +229,10 @@ export class DirectoryValidatorService {
                 fs.readFileSync(sourcePath, "utf-8") === link;
 
             if (hasExtracted) {
-                logger.log("Found old archive extract.");
+                logger.log(`Reusing cached archive extract at "${tempExtractPath}"`);
                 return await this.processDirectory(tempExtractPath, 1, options);
             } else {
-                logger.log(`Extracting "${link}" to "${tempExtractPath}"`);
+                // logger.log(`Unpacking archive -> temp "${tempExtractPath}"`);
 
                 if (!appSettings.keepExtractedFiles) {
                     app.deleteDirOnClose = tempExtractPath;
@@ -247,7 +247,7 @@ export class DirectoryValidatorService {
                 try {
                     const result = await unzip(link, tempExtractPath);
                     if (!result.ok) {
-                        logger.error(`directoryValidator.ts: Unzip failed: ${result.message}`);
+                        logger.error(`Unzip IPC returned error: ${result.message}`);
                         throw new Error(result.message);
                     }
                     return await this.processDirectory(tempExtractPath, 1, options);
@@ -270,7 +270,7 @@ export class DirectoryValidatorService {
                 }
             }
         } catch (err) {
-            logger.error("An Error occurred while checking/extracting archive:", err);
+            logger.error(`Packed manga handling failed for "${link}"`, err);
             return { isValid: false, error: err instanceof Error ? err : new Error(String(err)) };
         }
     }
@@ -295,7 +295,7 @@ export class DirectoryValidatorService {
                 fs.readFileSync(sourcePath, "utf-8") === link;
 
             if (hasRendered) {
-                logger.log("Found old rendered pdf.");
+                logger.log(`Reusing cached PDF render at "${tempExtractPath}"`);
                 return await this.processDirectory(tempExtractPath, 1, options);
             } else {
                 try {
@@ -304,11 +304,11 @@ export class DirectoryValidatorService {
                     }
                     await fs.mkdir(tempExtractPath);
                 } catch (err) {
-                    logger.error("Failed to prepare PDF extraction directory:", err);
+                    logger.error(`Could not create temp dir for PDF render: "${tempExtractPath}"`, err);
                     return { isValid: false, error: err instanceof Error ? err : new Error(String(err)) };
                 }
 
-                logger.log(`Rendering "${link}" at "${tempExtractPath}"`);
+                logger.log(`Rendering PDF pages -> "${tempExtractPath}"`);
                 if (!appSettings.keepExtractedFiles) {
                     app.deleteDirOnClose = tempExtractPath;
                 }
@@ -326,12 +326,12 @@ export class DirectoryValidatorService {
                     });
                     return await this.processDirectory(tempExtractPath, 1, options);
                 } catch (err) {
-                    logger.error("PDF rendering error:", err);
+                    logger.error(`PDF render failed for "${link}"`, err);
                     return { isValid: false, error: err instanceof Error ? err : new Error(String(err)) };
                 }
             }
         } catch (err) {
-            logger.error("An Error occurred while checking/rendering pdf:", err);
+            logger.error(`PDF open pipeline failed for "${link}"`, err);
             return { isValid: false, error: err instanceof Error ? err : new Error(String(err)) };
         }
     }
@@ -386,7 +386,7 @@ export class DirectoryValidatorService {
                             }
                             return { path: fullPath, isEmpty: true };
                         } catch (err) {
-                            logger.error(`Error checking directory ${fullPath}:`, err);
+                            logger.error(`Subdir scan failed: "${fullPath}"`, err);
                             return { path: fullPath, isEmpty: true };
                         } finally {
                             processed++;
@@ -426,7 +426,7 @@ export class DirectoryValidatorService {
             }
             return { isValid: true };
         } catch (err) {
-            logger.error("Error processing directory:", err);
+            logger.error(`processDirectory: readdir or image scan failed for "${link}"`, err);
             return { isValid: false, error: err instanceof Error ? err : new Error(String(err)) };
         } finally {
             // if (loadingTimeout) {

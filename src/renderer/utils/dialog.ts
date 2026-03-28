@@ -1,3 +1,7 @@
+import { createRendererLogger } from "./logger";
+
+const dialogLog = createRendererLogger("dialogUtils");
+
 type DialogUtils = {
     nodeError: (err: NodeJS.ErrnoException) => Promise<Electron.MessageBoxReturnValue>;
     customError: ({
@@ -72,7 +76,7 @@ type DialogUtils = {
 
 export const dialogUtils: DialogUtils = {
     nodeError: (err: NodeJS.ErrnoException) => {
-        window.logger.error(err);
+        dialogLog.error("nodeError dialog: forwarding OS error to main", err);
         return window.electron.invoke("dialog:nodeError", {
             name: err.name,
             errno: err.errno,
@@ -80,7 +84,7 @@ export const dialogUtils: DialogUtils = {
         });
     },
     customError: ({ title = "Error", message, detail, log = true }) => {
-        if (log) window.logger.error("Error:", message, detail || "");
+        if (log) dialogLog.error(`customError: ${message}`, detail || "");
         return window.electron.invoke("dialog:error", {
             title,
             message,

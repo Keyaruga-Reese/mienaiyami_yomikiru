@@ -1,7 +1,10 @@
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { createRendererLogger } from "@utils/logger";
 import type React from "react";
 import { useLayoutEffect, useRef, useState } from "react";
+
+const log = createRendererLogger("components/ui/InputCheckboxNumber");
 
 const InputCheckboxNumber = ({
     onChangeNum,
@@ -69,7 +72,7 @@ const InputCheckboxNumber = ({
     const changeHandler = () => {
         const currentTarget = inputRef.current;
         if (!currentTarget) {
-            console.error("InputCheckboxNumber: inputRef.current is null");
+            log.error("inputRef is null (DOM not mounted)");
             return;
         }
         if (!currentTarget.value) currentTarget.value = "0";

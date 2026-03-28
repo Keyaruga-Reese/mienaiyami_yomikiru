@@ -5,7 +5,11 @@ import { useAppSelector } from "@store/hooks";
 import { getReaderManga } from "@store/reader";
 import dateUtils from "@utils/date";
 import { dialogUtils } from "@utils/dialog";
+import { createRendererLogger } from "@utils/logger";
 import { useCallback } from "react";
+
+const log = createRendererLogger("manga/BookmarkList");
+
 import { shallowEqual } from "react-redux";
 import { useAppContext } from "src/renderer/App";
 
@@ -36,7 +40,7 @@ const BookmarkList: React.FC = () => {
                     });
                 }
             } catch (error) {
-                console.error(error);
+                log.error("navigate to bookmark failed", error);
                 dialogUtils.customError({
                     message: "Could not find the chapter for corresponding id.",
                 });

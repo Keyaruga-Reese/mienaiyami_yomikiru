@@ -1,4 +1,6 @@
-import { log } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("util/retry");
 
 export type RetryOptions = {
     /** Maximum number of retry attempts */
@@ -67,9 +69,10 @@ export async function withRetry<T>(operation: () => Promise<T>, options: RetryOp
             if (onRetry) {
                 onRetry(lastError, attempt + 1);
             } else {
-                log.warn(`Operation failed, retrying (${attempt + 1}/${maxRetries})...`, {
-                    error: lastError.message,
-                });
+                logger.warn(
+                    `withRetry: attempt ${attempt + 1}/${maxRetries} failed, retrying after delay`,
+                    lastError.message,
+                );
             }
 
             // wait before retry with exponential backoff

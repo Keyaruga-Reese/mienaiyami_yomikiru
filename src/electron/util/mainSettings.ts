@@ -3,7 +3,10 @@ import path from "node:path";
 import { ipc } from "@electron/ipc/utils";
 import { app } from "electron";
 import { z } from "zod";
-import { log } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("MainSettings");
+
 import { TrayManager } from "./tray";
 import { WindowManager } from "./window";
 
@@ -50,7 +53,7 @@ export class MainSettings {
             const parsedJSON = JSON.parse(fs.readFileSync(MainSettings.settingsPath, "utf-8"));
             return mainSettingsSchema.parse(parsedJSON);
         } catch (err) {
-            console.error("Error parsing main settings:", err);
+            logger.error("main-settings.json is invalid or unreadable; recreating defaults", err);
             return MainSettings.makeMainSettingsJson();
         }
     }
@@ -110,7 +113,7 @@ export class MainSettings {
 
             MainSettings.updateSettings(newSettings);
         } catch (err) {
-            log.error("Error migrating main settings:", err);
+            logger.error("Migration from legacy main-settings files failed", err);
         }
     }
 
@@ -132,6 +135,6 @@ MainSettings.initialize();
  * Migrate from old file per settings based settings
  */
 if ([oldHWAPath, oldTempPath, oldOpenInExistingWindowPath].some((p) => fs.existsSync(p))) {
-    log.info("Migrating from old main settings.");
+    logger.info("Migrating legacy per-flag main settings into main-settings.json");
     MainSettings.migrate();
 }

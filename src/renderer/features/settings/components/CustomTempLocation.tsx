@@ -4,6 +4,9 @@ import { updateMainSettings } from "@store/mainSettings";
 import InputCheckbox from "@ui/InputCheckbox";
 import { dialogUtils } from "@utils/dialog";
 import { promptSelectDir } from "@utils/file";
+import { createRendererLogger } from "@utils/logger";
+
+const log = createRendererLogger("settings/CustomTempLocation");
 
 const CustomTempLocation: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -18,7 +21,7 @@ const CustomTempLocation: React.FC = () => {
                 throw new Error(`Folder does not exist : ${newPath}`);
             }
         } catch (reason) {
-            window.logger.error("Unable to change temp path.", reason);
+            log.error("temp path update failed (IPC)", reason);
         }
     };
 
@@ -83,7 +86,7 @@ const CustomTempLocation: React.FC = () => {
                                     );
                             }
                         } catch (err) {
-                            window.logger.error(err);
+                            log.error("cache folder delete failed", err);
                         }
                     }}
                 >

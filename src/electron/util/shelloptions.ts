@@ -2,7 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import * as sudo from "@vscode/sudo-prompt";
 import { app } from "electron";
-import { IS_PORTABLE, log } from ".";
+import { IS_PORTABLE } from ".";
+import { createMainLogger } from "./logger";
+
+const logger = createMainLogger("shelloptions");
 
 const op = {
     name: "Yomikiru",
@@ -74,7 +77,7 @@ export const addOptionToExplorerMenu = async (): Promise<boolean> => {
         return await new Promise<boolean>((resolve, reject) => {
             sudo.exec(`regedit.exe /S ${regFilePath}`, op, (error) => {
                 if (error) {
-                    log.error("Failed to add explorer menu option:", error);
+                    logger.error("Windows Explorer 'Open in Yomikiru' (folders): regedit returned error", error);
                     reject(new Error(`Failed to add explorer menu option: ${error.message}`));
                     return;
                 }
@@ -82,7 +85,7 @@ export const addOptionToExplorerMenu = async (): Promise<boolean> => {
             });
         });
     } catch (error) {
-        log.error("Error in addOptionToExplorerMenu:", error);
+        logger.error("addOptionToExplorerMenu: failed before or after regedit", error);
         throw error;
     }
 };
@@ -122,7 +125,7 @@ export const addOptionToExplorerMenu_epub = async (): Promise<boolean> => {
         return await new Promise<boolean>((resolve, reject) => {
             sudo.exec(`regedit.exe /S ${regFilePath}`, op, (error) => {
                 if (error) {
-                    log.error("Failed to add epub explorer menu option:", error);
+                    logger.error("Windows Explorer 'Open in Yomikiru' (.epub): regedit returned error", error);
                     reject(new Error(`Failed to add epub explorer menu option: ${error.message}`));
                     return;
                 }
@@ -130,7 +133,7 @@ export const addOptionToExplorerMenu_epub = async (): Promise<boolean> => {
             });
         });
     } catch (error) {
-        log.error("Error in addOptionToExplorerMenu_epub:", error);
+        logger.error("addOptionToExplorerMenu_epub: failed before or after regedit", error);
         throw error;
     }
 };
@@ -163,7 +166,7 @@ export const deleteOptionInExplorerMenu = async (): Promise<boolean> => {
         return await new Promise<boolean>((resolve, reject) => {
             sudo.exec(`regedit.exe /S ${regFilePath}`, op, (error) => {
                 if (error) {
-                    log.error("Failed to delete explorer menu option:", error);
+                    logger.error("Windows Explorer: removing 'Open in Yomikiru' registry keys failed", error);
                     reject(new Error(`Failed to delete explorer menu option: ${error.message}`));
                     return;
                 }
@@ -171,7 +174,7 @@ export const deleteOptionInExplorerMenu = async (): Promise<boolean> => {
             });
         });
     } catch (error) {
-        log.error("Error in deleteOptionInExplorerMenu:", error);
+        logger.error("deleteOptionInExplorerMenu: failed before or after regedit", error);
         throw error;
     }
 };
@@ -192,7 +195,7 @@ export const deleteOptionInExplorerMenu_epub = async (): Promise<boolean> => {
         return await new Promise<boolean>((resolve, reject) => {
             sudo.exec(`regedit.exe /S ${regFilePath}`, op, (error) => {
                 if (error) {
-                    log.error("Failed to delete epub explorer menu option:", error);
+                    logger.error("Windows Explorer: removing .epub shell key failed", error);
                     reject(new Error(`Failed to delete epub explorer menu option: ${error.message}`));
                     return;
                 }
@@ -200,7 +203,7 @@ export const deleteOptionInExplorerMenu_epub = async (): Promise<boolean> => {
             });
         });
     } catch (error) {
-        log.error("Error in deleteOptionInExplorerMenu_epub:", error);
+        logger.error("deleteOptionInExplorerMenu_epub: failed before or after regedit", error);
         throw error;
     }
 };
