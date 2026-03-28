@@ -1222,6 +1222,30 @@ html{
                             margin: var(--paragraph-gap) !important;
                         }
                     }
+                    /** Book reader: `overrideEpubColors` + non-default font color. */
+                    &.overrideEpubFontColor {
+                        > .cont *:not(a) {
+                            color: var(--epub-font-color) !important;
+                        }
+                    }
+                    &.overrideEpubLinkColor > .cont a {
+                        color: var(--epub-link-color) !important;
+                    }
+                    &.overrideEpubPageBg {
+                        background-color: var(--epub-background-color) !important;
+                    }
+                    /**
+                     * Strip inner backgrounds from EPUB CSS so the content column color shows through
+                     * (exclude elements where background is usually intentional).
+                     */
+                    &.overrideEpubContentBg {
+                        > .cont {
+                            background-color: var(--epub-content-background-color) !important;
+                        }
+                        > .cont *:not(pre):not(code):not(img):not(svg):not(video):not(canvas) {
+                            background-color: transparent !important;
+                        }
+                    }
                     &.limitImgHeight {
                         > .cont {
                             img,

@@ -570,6 +570,18 @@ const EPUBReaderSettings = memo(
                                 ]}
                                 paraBefore="Page background color&nbsp;:"
                             />
+                            <InputCheckbox
+                                checked={appSettings.epubReaderSettings.overrideEpubColors}
+                                onChange={(e) => {
+                                    dispatch(
+                                        setEpubReaderSettings({
+                                            overrideEpubColors: e.currentTarget.checked,
+                                        }),
+                                    );
+                                }}
+                                title="When a color below is customized (not default), override matching styles from the book so your choices apply."
+                                paraAfter="Override EPUB's colors"
+                            />
                             <InputCheckboxColor
                                 checked={!appSettings.epubReaderSettings.useDefault_progressBackgroundColor}
                                 onChangeCheck={(e) => {

@@ -924,7 +924,23 @@ const EPubReader: React.FC = () => {
                     (appSettings.epubReaderSettings.limitImgHeight ? "limitImgHeight " : "") +
                     (appSettings.epubReaderSettings.noIndent ? "noIndent " : "") +
                     (appSettings.epubReaderSettings.invertImageColor ? "blendImage " : "") +
-                    (appSettings.epubReaderSettings.textSelect ? "textSelect " : "")
+                    (appSettings.epubReaderSettings.textSelect ? "textSelect " : "") +
+                    (appSettings.epubReaderSettings.overrideEpubColors &&
+                    !appSettings.epubReaderSettings.useDefault_fontColor
+                        ? "overrideEpubFontColor "
+                        : "") +
+                    (appSettings.epubReaderSettings.overrideEpubColors &&
+                    !appSettings.epubReaderSettings.useDefault_linkColor
+                        ? "overrideEpubLinkColor "
+                        : "") +
+                    (appSettings.epubReaderSettings.overrideEpubColors &&
+                    !appSettings.epubReaderSettings.useDefault_backgroundColor
+                        ? "overrideEpubPageBg "
+                        : "") +
+                    (appSettings.epubReaderSettings.overrideEpubColors &&
+                    !appSettings.epubReaderSettings.contentFrame.useDefault_contentBackgroundColor
+                        ? "overrideEpubContentBg "
+                        : "")
                 }
                 ref={mainRef}
                 style={{

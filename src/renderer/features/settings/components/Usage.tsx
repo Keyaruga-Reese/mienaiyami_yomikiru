@@ -377,6 +377,12 @@ const Usage: React.FC = () => {
                             To make the text column transparent so the wallpaper shows through: set{" "}
                             <b>Content background color</b> to transparent (e.g. <code>rgba(0,0,0,0)</code>).
                         </li>
+                        <li>
+                            Some books ship strong text or background colors in their own CSS. Enable{" "}
+                            <b>Override EPUB colors (when customized)</b> so your non-default font, link, page, and
+                            content background colors win over the book&apos;s styles (same section as those
+                            options).
+                        </li>
                     </ul>
                 </li>
                 <li>

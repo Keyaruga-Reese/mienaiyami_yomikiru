@@ -297,6 +297,11 @@ export const bookReaderSettingsSchema = z.object({
             color: z.string(),
         }),
     }),
+    /**
+     * When true, reader color settings (those not left at default) override matching declarations
+     * from EPUB-authored CSS so they take effect on books that ship strong inline or stylesheet colors.
+     */
+    overrideEpubColors: z.boolean(),
 });
 
 export type BookReaderSettings = z.infer<typeof bookReaderSettingsSchema>;
@@ -372,4 +377,5 @@ export const defaultBookReaderSettings: BookReaderSettings = {
             color: "#FF0000",
         },
     },
+    overrideEpubColors: false,
 };
