@@ -129,8 +129,9 @@ const GeneralSettings: React.FC = () => {
                         labelAfter="Minimize to Tray"
                     />
                     <div className="desc">
-                        When enabled, minimize sends the window to the system tray instead of the taskbar.
-                        Left-click tray icon to restore; right-click for context menu (Restore, Exit).
+                        When enabled, minimize sends the window to the system tray instead of the taskbar. One
+                        window: left-click tray toggles show/hide. Multiple windows: left-click restores or
+                        focuses. Right-click: window list, Hide all Windows, Exit.
                     </div>
                 </div>
                 <div className="toggleItem">

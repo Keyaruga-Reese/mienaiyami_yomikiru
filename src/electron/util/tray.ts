@@ -33,6 +33,19 @@ export class TrayManager {
         return `${title.slice(0, TITLE_TRUNCATE_LEN - 3)}...`;
     }
 
+    /**
+     * Shows a window that was hidden to the tray. Only {@link BrowserWindow#restore}s when the OS reports the
+     * window as minimized; otherwise `restore()` would incorrectly clear a maximized (or fullscreen) state.
+     */
+    private static showWindowFromTray(window: BrowserWindow): void {
+        if (window.isDestroyed()) return;
+        if (window.isMinimized()) {
+            window.restore();
+        }
+        window.show();
+        window.focus();
+    }
+
     private static updateContextMenu(): void {
         if (!TrayManager.tray || TrayManager.tray.isDestroyed()) return;
 
@@ -48,9 +61,7 @@ export class TrayManager {
                                   w.focus();
                                   return;
                               }
-                              w.restore();
-                              w.show();
-                              w.focus();
+                              TrayManager.showWindowFromTray(w);
                           }
                       },
                   }));
@@ -61,6 +72,14 @@ export class TrayManager {
                 enabled: false,
             },
             ...windowItems,
+            { type: "separator" },
+            {
+                label: "Hide all Windows",
+                enabled: windows.length > 0,
+                click: () => {
+                    TrayManager.hideAllWindows();
+                },
+            },
             { type: "separator" },
             {
                 label: "Exit",
@@ -85,15 +104,39 @@ export class TrayManager {
         TrayManager.lastFocusedWindow = null;
     }
 
+    /**
+     * Hides every non-destroyed window without focusing any (avoids stealing focus from other apps).
+     */
+    private static hideAllWindows(): void {
+        const windows = WindowManager.getAllWindows().filter((w) => !w.isDestroyed());
+        for (const w of windows) {
+            w.hide();
+        }
+        TrayManager.refreshMenu();
+        log.log(`Tray: hid ${windows.length} window(s) from context menu`);
+    }
+
+    /**
+     * Left-click: with a single window, toggles show/hide; with multiple windows, shows hidden or focuses (unchanged).
+     */
     private static handleTrayClick(): void {
-        const windows = WindowManager.getAllWindows();
-        const hidden = windows.filter((w) => !w.isDestroyed() && !w.isVisible());
+        const windows = WindowManager.getAllWindows().filter((w) => !w.isDestroyed());
+        if (windows.length === 1) {
+            const only = windows[0];
+            if (!only.isVisible()) {
+                TrayManager.showWindowFromTray(only);
+                return;
+            }
+            only.hide();
+            TrayManager.refreshMenu();
+            log.log("Tray: hid single window via tray icon click");
+            return;
+        }
+        const hidden = windows.filter((w) => !w.isVisible());
         // by default start from hidden windows first
         if (hidden.length > 0) {
             const toShow = hidden[hidden.length - 1];
-            toShow.restore();
-            toShow.show();
-            toShow.focus();
+            TrayManager.showWindowFromTray(toShow);
             return;
         }
         // if no hidden windows, pick last focused window; it could already be visible
@@ -102,9 +145,7 @@ export class TrayManager {
                 TrayManager.lastFocusedWindow.focus();
                 return;
             }
-            TrayManager.lastFocusedWindow.restore();
-            TrayManager.lastFocusedWindow.show();
-            TrayManager.lastFocusedWindow.focus();
+            TrayManager.showWindowFromTray(TrayManager.lastFocusedWindow);
             return;
         }
         const visible = windows.filter((w) => !w.isDestroyed() && w.isVisible());

@@ -248,9 +248,10 @@ const Usage: React.FC = () => {
                 <li>
                     <b>Minimize to Tray:</b> Enable in{" "}
                     <a onClick={() => scrollIntoView("#settings-otherSettings", "settings")}>Other Settings</a> to
-                    send the window to the system tray instead of the taskbar when minimizing. Left-click tray icon
-                    to restore; right-click for Restore and Exit. Exit respects &quot;Confirm Close Window&quot;
-                    when enabled.
+                    send the window to the system tray instead of the taskbar when minimizing. With one window,
+                    left-click the tray icon to show or hide it; with multiple windows, left-click restores hidden
+                    windows or focuses. Right-click for the window list, <b>Hide all Windows</b>, and Exit. Exit
+                    respects &quot;Confirm Close Window&quot; when enabled.
                 </li>
                 <li>
                     <a
