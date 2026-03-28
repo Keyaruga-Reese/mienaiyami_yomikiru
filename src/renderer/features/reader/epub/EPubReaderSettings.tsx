@@ -15,6 +15,7 @@ import { colorUtils } from "@utils/color";
 import { keyFormatter } from "@utils/keybindings";
 import { memo, useEffect, useLayoutEffect, useState } from "react";
 import BackgroundSettings from "./components/BackgroundSettings";
+import ContentFrameSettings from "./components/ContentFrameSettings";
 
 const EPUBReaderSettings = memo(
     ({
@@ -567,7 +568,7 @@ const EPUBReaderSettings = memo(
                                             }),
                                         ),
                                 ]}
-                                paraBefore="Background Color&nbsp;:"
+                                paraBefore="Page background color&nbsp;:"
                             />
                             <InputCheckboxColor
                                 checked={!appSettings.epubReaderSettings.useDefault_progressBackgroundColor}
@@ -644,6 +645,7 @@ const EPUBReaderSettings = memo(
                             />
                         </div>
                     </div>
+                    <ContentFrameSettings />
                     <BackgroundSettings />
                     <div className="settingItem">
                         <div

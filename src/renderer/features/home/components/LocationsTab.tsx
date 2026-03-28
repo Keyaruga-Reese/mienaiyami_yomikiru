@@ -66,7 +66,7 @@ const LocationsTab = (): ReactElement => {
                                 });
                             }
                         } catch (error) {
-                            console.log(error);
+                            window.logger.error("displayList: error", error);
                         }
                     }),
                 );
@@ -90,7 +90,6 @@ const LocationsTab = (): ReactElement => {
     useEffect(() => {
         let timeout: NodeJS.Timeout;
         const refresh = () => {
-            console.log("refresh");
             if (timeout) clearTimeout(timeout);
             timeout = setTimeout(() => {
                 displayList(currentLink, true);

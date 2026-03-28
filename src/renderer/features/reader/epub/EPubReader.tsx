@@ -957,7 +957,18 @@ const EPubReader: React.FC = () => {
                     "--epub-background-color": appSettings.epubReaderSettings.useDefault_backgroundColor
                         ? "var(--body-bg-color)"
                         : appSettings.epubReaderSettings.backgroundColor,
-                    "--epub-cont-padding-inline": `${appSettings.epubReaderSettings.backgroundImage.paddingInline}px`,
+                    "--epub-content-background-color": appSettings.epubReaderSettings.contentFrame
+                        .useDefault_contentBackgroundColor
+                        ? "var(--body-bg-color)"
+                        : appSettings.epubReaderSettings.contentFrame.contentBackgroundColor,
+                    "--epub-cont-padding-inline": `${appSettings.epubReaderSettings.contentFrame.paddingInline}px`,
+                    "--epub-content-border-width": appSettings.epubReaderSettings.contentFrame.border.enabled
+                        ? `${appSettings.epubReaderSettings.contentFrame.border.width}px`
+                        : "0px",
+                    "--epub-content-border-style": appSettings.epubReaderSettings.contentFrame.border.style,
+                    "--epub-content-border-color": appSettings.epubReaderSettings.contentFrame.border.enabled
+                        ? appSettings.epubReaderSettings.contentFrame.border.color
+                        : "transparent",
                 }}
                 onContextMenu={(e) => {
                     e.stopPropagation();

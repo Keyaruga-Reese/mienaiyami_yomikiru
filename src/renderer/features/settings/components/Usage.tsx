@@ -360,8 +360,11 @@ const Usage: React.FC = () => {
                     </ul>
                 </li>
                 <li id="settings-usage-epubBackground">
-                    <b>EPUB Reader Background:</b> While reading EPUB, open Reader Settings and expand the{" "}
-                    <b>Background</b> section.
+                    <b>EPUB Reader Background:</b> While reading EPUB, open Reader Settings. In{" "}
+                    <b>Styles &amp; Others</b>, <b>Page background color</b> is the canvas behind the column;{" "}
+                    <b>Content background color</b> is the text column. Expand <b>Content frame</b> for{" "}
+                    <b>Padding inline</b> and optional <b>Content border</b> (width, style, color). Expand the{" "}
+                    <b>Background</b> section for wallpaper.
                     <ul>
                         <li>
                             Enable <b>Background image (wallpaper)</b>, select an image, then adjust dim intensity,
@@ -371,13 +374,8 @@ const Usage: React.FC = () => {
                             Optionally enable <b>Image layer overlay</b> and set its color and opacity.
                         </li>
                         <li>
-                            <b>Padding inline</b> adds horizontal padding to the content area; works with or
-                            without a background image.
-                        </li>
-                        <li>
-                            To make the content area transparent so the wallpaper shows through behind the text:
-                            use <b>Background Color</b> in <b>Styles &amp; Others</b> above — uncheck default and
-                            set to transparent (e.g. <code>rgba(0,0,0,0)</code>).
+                            To make the text column transparent so the wallpaper shows through: set{" "}
+                            <b>Content background color</b> to transparent (e.g. <code>rgba(0,0,0,0)</code>).
                         </li>
                     </ul>
                 </li>

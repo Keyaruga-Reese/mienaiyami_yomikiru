@@ -190,7 +190,6 @@ const App = (): ReactElement => {
                 dispatch(fetchAllNotes());
             }),
             window.electron.on("mainSettings:sync", (settings) => {
-                console.log("mainSettings:sync", settings);
                 dispatch(setMainSettings(settings));
             }),
             window.electron.on("fs:fileChanged", ({ filePath }) => {

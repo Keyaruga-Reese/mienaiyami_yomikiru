@@ -236,6 +236,7 @@ export const bookReaderSettingsSchema = z.object({
     fontWeight: z.number(),
     linkColor: z.string(),
     useDefault_backgroundColor: z.boolean(),
+    /** Page/canvas behind the EPUB content column (see `--epub-background-color` on `section.main`). */
     backgroundColor: z.string(),
     useDefault_progressBackgroundColor: z.boolean(),
     progressBackgroundColor: z.string(),
@@ -249,6 +250,7 @@ export const bookReaderSettingsSchema = z.object({
         size: z.boolean(),
         font: z.boolean(),
         styles: z.boolean(),
+        contentFrame: z.boolean(),
         background: z.boolean(),
         scrollSpeed: z.boolean(),
     }),
@@ -267,7 +269,7 @@ export const bookReaderSettingsSchema = z.object({
      */
     focusChapterInList: z.boolean(),
     hideSideList: z.boolean(),
-    /** Reading background settings: wallpaper, layer overlay, padding. */
+    /** Reading background settings: wallpaper and layer overlay (fixed behind content). */
     backgroundImage: z.object({
         enabled: z.boolean(),
         path: z.string(),
@@ -279,7 +281,21 @@ export const bookReaderSettingsSchema = z.object({
             color: z.string(),
             opacity: z.number(),
         }),
+    }),
+    /**
+     * Content column frame: text column background, horizontal padding, optional border around `.cont`.
+     */
+    contentFrame: z.object({
+        useDefault_contentBackgroundColor: z.boolean(),
+        /** Background of the text column; separate from page background for wallpaper/transparency. */
+        contentBackgroundColor: z.string(),
         paddingInline: z.number(),
+        border: z.object({
+            enabled: z.boolean(),
+            width: z.number(),
+            style: z.union([z.literal("solid"), z.literal("dashed"), z.literal("dotted"), z.literal("double")]),
+            color: z.string(),
+        }),
     }),
 });
 
@@ -320,6 +336,7 @@ export const defaultBookReaderSettings: BookReaderSettings = {
         size: false,
         font: false,
         styles: true,
+        contentFrame: true,
         background: true,
         scrollSpeed: true,
     },
@@ -340,9 +357,19 @@ export const defaultBookReaderSettings: BookReaderSettings = {
         contrast: 100,
         layer: {
             enabled: false,
-            color: "#000000",
-            opacity: 0.8,
+            color: "#FF0000",
+            opacity: 0.3,
         },
+    },
+    contentFrame: {
+        useDefault_contentBackgroundColor: true,
+        contentBackgroundColor: "#000000",
         paddingInline: 0,
+        border: {
+            enabled: false,
+            width: 1,
+            style: "solid",
+            color: "#FF0000",
+        },
     },
 };

@@ -2,7 +2,6 @@ import { setEpubReaderSettings } from "@store/appSettings";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import InputCheckbox from "@ui/InputCheckbox";
 import InputColor from "@ui/InputColor";
-import InputNumber from "@ui/InputNumber";
 import InputRange from "@ui/InputRange";
 import { colorUtils } from "@utils/color";
 import { promptSelectDir } from "@utils/file";
@@ -31,7 +30,7 @@ const BackgroundSettings = memo(() => {
                     );
                 }}
             >
-                Background
+                Background Image
             </div>
             <div className="options col">
                 <InputCheckbox
@@ -46,7 +45,7 @@ const BackgroundSettings = memo(() => {
                             }),
                         );
                     }}
-                    paraAfter="Background Image (wallpaper)"
+                    labelAfter="Use Background Image"
                 />
                 {appSettings.epubReaderSettings.backgroundImage.enabled && (
                     <>
@@ -188,7 +187,7 @@ const BackgroundSettings = memo(() => {
                                     }),
                                 );
                             }}
-                            paraAfter="Image layer overlay"
+                            labelAfter="Image layer overlay"
                         />
 
                         <InputColor
@@ -238,25 +237,6 @@ const BackgroundSettings = memo(() => {
                         />
                     </>
                 )}
-                <InputNumber
-                    value={appSettings.epubReaderSettings.backgroundImage.paddingInline}
-                    min={0}
-                    max={200}
-                    timeout={[
-                        1000,
-                        (value) =>
-                            dispatch(
-                                setEpubReaderSettings({
-                                    backgroundImage: {
-                                        ...appSettings.epubReaderSettings.backgroundImage,
-                                        paddingInline: value,
-                                    },
-                                }),
-                            ),
-                    ]}
-                    labelBefore="Padding&nbsp;:"
-                    labelAfter="px"
-                />
             </div>
         </div>
     );

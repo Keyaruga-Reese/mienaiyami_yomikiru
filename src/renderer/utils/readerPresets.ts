@@ -239,7 +239,6 @@ export const parseReaderPresetsStateWithMeta = (
           ? { ...(data as object) }
           : {};
 
-    console.log(Date.now(), "parseReaderPresetsStateWithMeta");
     const parsed = readerPresetsStateSchema.safeParse(rawWrapper);
     if (parsed.success) {
         if (parsed.data.presets.length === 0) {

@@ -1188,6 +1188,11 @@ html{
                     --epub-font-color: none;
                     --epub-link-color: none;
                     --epub-background-color: var(--body-bg-color);
+                    --epub-content-background-color: var(--body-bg-color);
+                    --epub-cont-padding-inline: 0px;
+                    --epub-content-border-width: 0px;
+                    --epub-content-border-style: solid;
+                    --epub-content-border-color: transparent;
                     background-color: var(--epub-background-color);
                     &.hasBackgroundImage {
                         background-color: transparent;
@@ -1315,8 +1320,12 @@ html{
                         width: 100%;
                         transform: translate3d(0, 0, 0);
                         width: var(--width);
-                        background-color: var(--epub-background-color);
+                        box-sizing: border-box;
+                        background-color: var(--epub-content-background-color);
                         padding-inline: var(--epub-cont-padding-inline);
+                        border-width: var(--epub-content-border-width);
+                        border-style: var(--epub-content-border-style);
+                        border-color: var(--epub-content-border-color);
                         margin: 20px 0;
                         .findInPage-highlight {
                             color: var(--font-select-color);
