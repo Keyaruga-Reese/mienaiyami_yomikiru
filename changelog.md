@@ -18,6 +18,15 @@
 
 # 2.23.2-beta
 
+### 2.23.2-beta.10
+
+- feat: tray Hide all action and single-window tray click toggle (#514). Hide every window from the tray menu; when only one window exists, left-clicking the tray icon toggles that window's visibility.
+- feat: book reader option to override EPUB-authored colors (#515). When enabled, your font, link, page, and content background colors can override styles from the book's CSS.
+- feat: book reader content frame settings (#399). Separate content background, inline padding, and border from the page background; wallpaper padding applies to the content area.
+- feat: structured, scoped logging for main process, preload, and renderer so log files are easier to follow.
+- fix: updater download window handling and Linux update installation (clearer errors, unified sudo install path, smoother install-on-quit flow).
+- dev: renderer logging uses `createRendererLogger` from `@utils/logger` only; direct `window.logger` use is removed from renderer code.
+
 ### 2.23.2-beta.9
 
 - fix: repair reader presets JSON when keys are missing or invalid instead of replacing entire presets. This fixes the issue where all presets were invalidated just because of one invalid key. Now user manga/book presets cannot be deleted; reset defaults restores bundled presets and recreates User from current reader settings.
