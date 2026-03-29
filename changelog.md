@@ -16,7 +16,7 @@
 > Issue is only present to users using "Setup" version.
 > For more information, see [Announcement #451](https://github.com/mienaiyami/yomikiru/discussions/451)
 
-# 2.23.2-beta
+# 2.24.0
 
 ### 2.23.2-beta.10
 
