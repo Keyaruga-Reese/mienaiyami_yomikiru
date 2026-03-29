@@ -978,7 +978,7 @@ const EPubReader: React.FC = () => {
                         : appSettings.epubReaderSettings.backgroundColor,
                     "--epub-content-background-color": appSettings.epubReaderSettings.contentFrame
                         .useDefault_contentBackgroundColor
-                        ? "var(--body-bg-color)"
+                        ? "transparent"
                         : appSettings.epubReaderSettings.contentFrame.contentBackgroundColor,
                     "--epub-cont-padding-inline": `${appSettings.epubReaderSettings.contentFrame.paddingInline}px`,
                     "--epub-content-border-width": appSettings.epubReaderSettings.contentFrame.border.enabled

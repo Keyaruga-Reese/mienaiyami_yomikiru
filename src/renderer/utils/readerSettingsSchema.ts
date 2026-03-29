@@ -369,7 +369,7 @@ export const defaultBookReaderSettings: BookReaderSettings = {
     contentFrame: {
         useDefault_contentBackgroundColor: true,
         contentBackgroundColor: "#000000",
-        paddingInline: 0,
+        paddingInline: 10,
         border: {
             enabled: false,
             width: 1,
